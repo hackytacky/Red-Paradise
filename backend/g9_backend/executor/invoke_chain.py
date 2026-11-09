@@ -24,6 +24,7 @@ from ..tools.web_scanners import dispatch_httpx, dispatch_ffuf, dispatch_nuclei
 from ..tools.recon_tools import dispatch_subfinder, dispatch_masscan, dispatch_testssl
 from ..tools.osint_secret_tools import dispatch_theharvester, dispatch_gitleaks, dispatch_dig
 from ..tools.gowitness_amass_dnsrecon import dispatch_gowitness, dispatch_amass, dispatch_dnsrecon
+from ..tools.feed_adapters import dispatch_shodan, dispatch_censys, dispatch_abusech, dispatch_otx
 
 ADAPTERS: dict = {
     "nmap-scoped": dispatch_nmap,
@@ -39,6 +40,10 @@ ADAPTERS: dict = {
     "gowitness": dispatch_gowitness,
     "amass": dispatch_amass,
     "dnsrecon": dispatch_dnsrecon,
+    "shodan": dispatch_shodan,
+    "censys": dispatch_censys,
+    "abusech": dispatch_abusech,
+    "otx": dispatch_otx,
 }
 
 

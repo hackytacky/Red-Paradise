@@ -14,6 +14,7 @@ host executes.
 
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
 from dataclasses import dataclass
@@ -39,9 +40,19 @@ class ContainerCommand:
         return " ".join(shlex.quote(a) for a in self.argv)
 
 
-def build_command(spec: dict, image: str, tool_argv: list[str]) -> ContainerCommand:
+ENV_NAME_RE = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+
+
+def build_command(
+    spec: dict, image: str, tool_argv: list[str], env_var_names: list[str] | None = None,
+) -> ContainerCommand:
     """Build the hardened docker run command for a RESTRICTED-ANALYSIS
-    workload. Refuses hostile-research profiles — those belong to KVM."""
+    workload. Refuses hostile-research profiles — those belong to KVM.
+
+    `env_var_names` carries environment variable NAMES only (never
+    values): docker inherits each variable from the host environment,
+    so secrets like API keys never appear in the command line, the
+    audit ledger, or any log."""
     if spec.get("sandbox_profile") == "hostile-research-vm":
         raise RuntimeError_(
             "hostile-research workloads are never containerized — route to the KVM worker"
@@ -50,6 +61,12 @@ def build_command(spec: dict, image: str, tool_argv: list[str]) -> ContainerComm
         raise RuntimeError_(f"unknown sandbox profile {spec.get('sandbox_profile')!r}")
 
     network_policy = spec.get("network_policy_id", "none")
+    for name in env_var_names or []:
+        if not ENV_NAME_RE.match(name):
+            raise RuntimeError_(
+                f"env var name {name!r} is invalid — only NAME (no value) is permitted; "
+                "secret values must never enter the command line"
+            )
     argv = [
         "docker", "run", "--rm",
         "--cap-drop", "ALL",
@@ -62,6 +79,8 @@ def build_command(spec: dict, image: str, tool_argv: list[str]) -> ContainerComm
     ]
     # working directory mount is the ONLY writable surface, scoped to the action
     argv += ["--tmpfs", "/tmp:rw,noexec,nosuid,size=64m"]
+    for name in env_var_names or []:
+        argv += ["-e", name]
     if spec.get("working_directory"):
         argv += ["-v", f"{spec['working_directory']}:/work:ro"]
     argv += [image, *tool_argv]

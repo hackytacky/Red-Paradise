@@ -153,6 +153,8 @@ CTI_SOURCES = [
     ("cxsecurity", "cxsecurity.com", "advisory-source", S, "web", [], ""),
     ("shodan", "Shodan", "attack-surface-intel", S, "commercial-api", [], "API key admission"),
     ("censys", "Censys", "attack-surface-intel", S, "commercial-api", [], "API key admission"),
+    ("abusech", "abuse.ch feeds", "cti-feed", S, "free-api", [], "URLhaus/ThreatFox/MalwareBazaar/Feodo/SSLBL/YARAify — metadata-level queries only"),
+    ("otx", "AlienVault OTX", "cti-feed", S, "free-api", [], "API key admission"),
     ("tidal-cyber", "Tidal Cyber", "threat-informed-defense", S, "commercial", [], "ATT&CK mapping reference"),
     ("control-validation-compass", "Control Validation Compass", "threat-informed-defense", S, "commercial", [], ""),
 ]
