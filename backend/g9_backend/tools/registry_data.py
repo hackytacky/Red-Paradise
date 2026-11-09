@@ -30,6 +30,8 @@ K = "kvm"                # hostile-research worker class
 S = "service"            # hardened host service / data source
 
 CONTAINER_RECON = [
+    ("testssl", "testssl.sh", "tls-audit", C, "GPL-2.0", [], ""),
+    ("nmap-scoped", "nmap (scoped profile)", "network-recon", C, "GPL-2.0", [], "adapter implemented"),
     ("masscan", "masscan", "network-recon", C, "GPL-2.0", [], "rate-limited profile only"),
     ("subfinder", "subfinder", "passive-recon", C, "MIT", [], ""),
     ("sublist3r", "Sublist3r", "passive-recon", C, "GPL-3.0", [], ""),
@@ -266,10 +268,218 @@ UNVERIFIED_SOURCES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Wave 2 additions (operator-approved; repeats skipped — already registered:
+# nuclei, sqlmap, pacu, ghostwriter, trufflehog, gitleaks, cobalt-strike,
+# hashcat, john, hydra, mimikatz, impacket, lazagne, metasploit, ettercap,
+# mitmproxy, aircrack-ng, s3scanner, cloudbrute, semgrep, searchsploit)
+# ---------------------------------------------------------------------------
+
+C2_FRAMEWORKS_W2 = [
+    ("mythic", "Mythic", "c2", K, "BSD-3-Clause", [SEPARATE_AUTH, LAB_ONLY], "open C2 framework; per-action approval"),
+    ("sliver", "Sliver", "c2", K, "BSD-3-Clause", [SEPARATE_AUTH, LAB_ONLY], "implant framework; per-action approval"),
+    ("empire-starkiller", "Empire + Starkiller", "c2", K, "BSD-3-Clause", [SEPARATE_AUTH, LAB_ONLY], "per-action approval"),
+    ("havoc", "Havoc", "c2", K, "BSD-3-Clause", [SEPARATE_AUTH, LAB_ONLY], "per-action approval"),
+    ("nighthawk", "Nighthawk", "c2", K, "commercial", [SEPARATE_AUTH, LICENSE_REQUIRED, LAB_ONLY], "valid license required"),
+    ("maktego", "maktego", "unverified-tool", K, "unknown", [UNVERIFIED], "could not identify — manual review"),
+    ("naubik", "naubik", "unverified-tool", K, "unknown", [UNVERIFIED], "could not identify — manual review"),
+]
+
+POST_EXPLOIT_AD = [
+    ("netexec", "NetExec", "post-exploit", K, "BSD-2-Clause", [SEPARATE_AUTH], "per-action approval"),
+    ("rubeus", "Rubeus", "kerberos-abuse", K, "GPL-3.0", [SEPARATE_AUTH], ""),
+    ("sharphound", "SharpHound", "identity-recon", K, "GPL-3.0", [SEPARATE_AUTH], "collection only"),
+    ("azurehound", "AzureHound", "identity-recon", K, "GPL-3.0", [SEPARATE_AUTH], "collection only"),
+    ("certipy", "Certipy", "adcs-abuse", K, "MIT", [SEPARATE_AUTH], ""),
+    ("inveigh", "Inveigh", "spoofing", K, "GPL-3.0", [SEPARATE_AUTH], "on-path: separate RoE addendum"),
+    ("adrecon", "ADRecon", "ad-audit", C, "MIT", [], "read-only audit"),
+    ("powersploit", "PowerSploit", "post-exploit", K, "Apache-2.0", [SEPARATE_AUTH], "per-action approval"),
+    ("responder", "Responder", "spoofing", K, "GPL-3.0", [SEPARATE_AUTH], "relay chain: separate RoE addendum"),
+    ("ntlmrelayx", "ntlmrelayx (impacket)", "relay", K, "CC-BY-4.0", [SEPARATE_AUTH], "relay chain: separate RoE addendum"),
+    ("mitm6", "mitm6", "relay", K, "MIT", [SEPARATE_AUTH], "relay chain: separate RoE addendum"),
+    ("petitpotam", "PetitPotam", "coercion", K, "MIT", [SEPARATE_AUTH], "coercion primitive: per-action approval"),
+    ("printerbug", "PrinterBug", "coercion", K, "MIT", [SEPARATE_AUTH], ""),
+    ("coerce-primitives", "Coercer (already registered) + DirCoerce family", "coercion", K, "mixed", [SEPARATE_AUTH], "see coercer entry"),
+    ("adcspwn", "ADCSPwn", "escalation", K, "MIT", [SEPARATE_AUTH], ""),
+    ("krbrelayup", "KrbRelayUp", "escalation", K, "MIT", [SEPARATE_AUTH], ""),
+    ("ldapsearch", "ldapsearch", "directory-query", C, "OpenLDAP", [], "read-only queries"),
+    ("windapsearch", "windapsearch", "directory-query", C, "BSD-3-Clause", [], "read-only queries"),
+    ("pygpoabuse", "pyGPOAbuse", "gpo-abuse", K, "MIT", [SEPARATE_AUTH], "per-action approval"),
+    ("sharpgpoabuse", "SharpGPOAbuse", "gpo-abuse", K, "MIT", [SEPARATE_AUTH], ""),
+    ("dacledit", "dacledit.py", "acl-abuse", K, "MIT", [SEPARATE_AUTH], ""),
+    ("bloodyad", "BloodyAD", "acl-abuse", K, "MIT", [SEPARATE_AUTH], ""),
+    ("secretsdump", "secretsdump (impacket)", "credential-access", K, "CC-BY-4.0", [SEPARATE_AUTH], "evidence handling per RoE"),
+    ("getnpusers", "GetNPUsers (impacket)", "credential-access", K, "CC-BY-4.0", [SEPARATE_AUTH], ""),
+    ("getuserspnss", "GetUserSPNs (impacket)", "credential-access", K, "CC-BY-4.0", [SEPARATE_AUTH], ""),
+    ("wmiexec-psexec", "wmiexec / psexec (impacket)", "remote-exec", K, "CC-BY-4.0", [SEPARATE_AUTH], "per-action approval"),
+    ("pypykatz", "pypykatz", "credential-access", K, "MIT", [SEPARATE_AUTH], "LSASS parsing of engagement evidence"),
+    ("kerbrute", "Kerbrute", "credential-spray", K, "GPL-3.0", [SEPARATE_AUTH], "online attacks: per-action approval + rate limits"),
+]
+
+TUNNELING_INFRA = [
+    ("chisel", "chisel", "tunneling", K, "MIT", [SEPARATE_AUTH], "per-action approval"),
+    ("shuttle", "shuttle", "tunneling", K, "unknown", [UNVERIFIED], "manual review"),
+    ("veil", "Veil Framework", "payload-gen", K, "AGPL-3.0", [SEPARATE_AUTH, LICENSE_REQUIRED], "AV-evasion: lab/authorized only"),
+    ("donut", "donut", "payload-gen", K, "BSD-3-Clause", [SEPARATE_AUTH], ""),
+    ("scarecrow", "ScareCrow", "payload-gen", K, "MIT", [SEPARATE_AUTH], ""),
+    ("pezor", "PEzor", "payload-gen", K, "MIT", [SEPARATE_AUTH], ""),
+    ("freeze", "Freeze", "payload-gen", K, "MIT", [SEPARATE_AUTH], ""),
+    ("sigthief", "SigThief", "signature-theft", K, "MIT", [SEPARATE_AUTH], "lab/authorized engagements only"),
+    ("limelighter", "LimeLighter", "signature-theft", K, "MIT", [SEPARATE_AUTH], ""),
+    ("chimera", "chimera", "payload-obfuscation", K, "GPL-3.0", [SEPARATE_AUTH], ""),
+    ("inceptor", "Inceptor", "payload-obfuscation", K, "MIT", [SEPARATE_AUTH], ""),
+    ("defendercheck", "DefenderCheck / ThreatCheck", "av-testing", K, "MIT", [LAB_ONLY], "own defensive posture testing"),
+    ("pe-bear", "PE-bear / CFF Explorer / LIEF", "binary-surgery", K, "freeware/MIT", [], "LIEF scriptable"),
+    ("sharpcollection", "SharpCollection", "payload-library", K, "MIT", [SEPARATE_AUTH, LAB_ONLY], ""),
+    ("amsi-bypass-corpus", "AMSI bypass corpus (rotating)", "evasion-corpus", K, "mixed", [SEPARATE_AUTH, LAB_ONLY], "own-lab testing only"),
+    ("malleable-profiles", "Malleable C2 / Sliver HTTP profiles", "c2-profiles", K, "mixed", [SEPARATE_AUTH, LAB_ONLY], ""),
+    ("proxychains", "proxychains", "tunneling", C, "GPL-3.0", [], ""),
+    ("socat-ncat", "socat / ncat", "relay", K, "GPL-2.0/MIT", [SEPARATE_AUTH], "listener setup: per-action approval"),
+    ("cloudflared-ngrok", "cloudflared / ngrok external listeners", "tunneling", S, "commercial-terms", [SEPARATE_AUTH], "external exposure: per-action approval + scope note"),
+    ("rclone", "rclone (exfil interface)", "exfiltration", K, "MIT", [SEPARATE_AUTH], "exfil tests: named scope authorization required"),
+    ("wireguard", "WireGuard", "connectivity", S, "MIT", [], "target connectivity"),
+]
+
+SOCIAL_ENGINEERING = [
+    ("gophish", "GoPhish", "phishing-platform", K, "MIT", [SEPARATE_AUTH], "phishing: separate RoE addendum mandatory"),
+    ("set-toolkit", "Social Engineer Toolkit", "social-engineering", K, "BSD-3-Clause", [SEPARATE_AUTH], "separate RoE addendum mandatory"),
+]
+
+WEB_API_TOOLS = [
+    ("burp-suite-pro", "Burp Suite Professional (REST API)", "dast", C, "commercial", [LICENSE_REQUIRED], "valid license; REST API is the automation surface"),
+    ("caido", "Caido", "dast", C, "commercial", [LICENSE_REQUIRED], "GraphQL API"),
+    ("owasp-zap", "OWASP ZAP", "dast", C, "Apache-2.0", [], "headless pipelines"),
+    ("invicti", "Invicti", "dast", C, "commercial", [LICENSE_REQUIRED], ""),
+    ("nessus", "Nessus", "credentialed-scan", C, "commercial", [LICENSE_REQUIRED], ""),
+    ("openvas", "OpenVAS / Greenbone", "credentialed-scan", C, "GPL-2.0", [], ""),
+    ("xsstrike-dalfox", "XSStrike / Dalfox", "xss-automation", K, "MIT", [SEPARATE_AUTH], "writes to target apps: per-action approval"),
+    ("commix", "Commix", "command-injection", K, "GPL-3.0", [SEPARATE_AUTH], "per-action approval"),
+    ("ssrfmap-gopherus", "SSRFmap / Gopherus", "ssrf-exploitation", K, "MIT/GPL-3.0", [SEPARATE_AUTH], "per-action approval"),
+    ("jwt-tooling", "jwt_tool / jwt-cracker", "jwt-testing", K, "MIT", [], "engagement-collected tokens only"),
+    ("ysoserial", "ysoserial / ysoserial.net / marshalsec", "deserialization", K, "MIT", [SEPARATE_AUTH], "gadget-chain validation in lab first"),
+    ("exploit-template-library", "Log4Shell/Spring4Shell-class exploit templates", "exploit-templates", K, "mixed", [SEPARATE_AUTH, LAB_ONLY], "template library, lab validation before engagement use"),
+    ("autorize-authmatrix", "autorize / authmatrix (Burp extensions)", "authz-testing", C, "MIT", [], ""),
+    ("param-miner", "param-miner", "param-discovery", C, "MIT", [], ""),
+    ("arjun", "Arjun", "param-discovery", C, "GPL-3.0", [], ""),
+    ("kiterunner", "kiterunner", "api-discovery", C, "GPL-3.0", [], ""),
+    ("graphql-cop", "GraphQL Voyager / graphql-cop", "graphql-testing", C, "MIT", [], ""),
+    ("waybackurls-gau-katana", "waybackurls / gau / katana", "url-harvest", C, "MIT", [], "passive"),
+    ("wappalyzer-whatweb", "Wappalyzer / WhatWeb", "tech-fingerprint", C, "MIT", [], ""),
+    ("crt-sh-certstream", "crt.sh API / certstream", "ct-mining", S, "web/api", [], "passive"),
+    ("smtp-user-enum-swaks", "smtp-user-enum / swaks", "smtp-recon", K, "GPL-2.0/MIT", [SEPARATE_AUTH], "mail infrastructure: rate-limited, per RoE"),
+    ("enum4linux-rpcclient", "enum4linux-ng / rpcclient", "smb-rpc-recon", K, "GPL-3.0", [SEPARATE_AUTH], "authenticated enumeration per RoE"),
+    ("snmpwalk-onesixtyone", "snmpwalk / onesixtyone", "snmp-recon", C, "BSD/MIT", [], "reads only"),
+    ("showmount", "showmount / nfsshell", "nfs-recon", C, "BSD/GPL", [], ""),
+    ("alive6-dnsdict6", "alive6 / dnsdict6", "ipv6-recon", C, "GPL-2.0", [], "dual-stack coverage"),
+]
+
+CLOUD_K8S = [
+    ("scout-suite", "Scout Suite", "cloud-audit", C, "GPL-2.0", [], "machine-readable output"),
+    ("microburst", "MicroBurst", "cloud-recon", K, "MIT", [SEPARATE_AUTH], "per-action approval"),
+    ("roadrecon", "ROADrecon", "azure-ad-recon", K, "MIT", [SEPARATE_AUTH], "read-only profile first"),
+    ("azure-suite", "Azure-Suite tools", "cloud-recon", K, "MIT", [SEPARATE_AUTH], ""),
+    ("cloudgoat", "CloudGoat", "cloud-lab", S, "MIT", [LAB_ONLY], "training lab"),
+    ("cloudfox", "CloudFox", "cloud-recon", K, "MIT", [SEPARATE_AUTH], ""),
+    ("prowler", "Prowler", "cloud-audit", C, "Apache-2.0", [], "machine-readable output"),
+    ("cartography", "Cartography", "cloud-graph", S, "Apache-2.0", [], "asset graph ingestion into the evidence graph"),
+    ("kube-hunter", "kube-hunter / kube-bench", "k8s-audit", C, "Apache-2.0", [], ""),
+    ("trivy", "Trivy", "container-scan", C, "Apache-2.0", [], ""),
+    ("grype-syft", "Grype + Syft", "sbom-scan", C, "Apache-2.0", [], "upstream admission pipeline component"),
+    ("peirates-kubeletctl", "Peirates / kubeletctl", "k8s-exploitation", K, "Apache-2.0/MIT", [SEPARATE_AUTH], "in-cluster: per-action approval"),
+    ("deepce-cdk", "Deepce / CDK", "container-escape", K, "MIT", [SEPARATE_AUTH, LAB_ONLY], "escape testing: lab + authorized only"),
+    ("docker-api-abuse", "Docker API abuse technique", "technique", S, "n/a", [SEPARATE_AUTH, LAB_ONLY], "documented technique; never against host daemon"),
+    ("imds-abuse", "IMDS abuse technique (169.254.169.254)", "technique", S, "n/a", [SEPARATE_AUTH], "SSRF-to-credential chains per RoE"),
+    ("checkov-tfsec-terrascan", "checkov / tfsec / terrascan", "iac-scan", C, "Apache-2.0/MIT", [], ""),
+    ("codeql", "CodeQL", "sast", C, "custom/MIT", [], "source-available targets"),
+    ("retirejs-npm-audit", "Retire.js / npm audit", "js-dependency-rot", C, "MIT", [], ""),
+    ("nvd-cvemap", "NVD API + cvemap", "vuln-enrichment", S, "web/api", [], ""),
+    ("attck-stix", "ATT&CK STIX bundle", "knowledge-base", S, "Apache-2.0", [], "technique tagging"),
+]
+
+CREDENTIAL_ATTACKS = [
+    ("pack-mangling", "PACK / hashcat rule sets", "wordlist-gen", C, "GPL-3.0", [], ""),
+    ("cewl-mentalist-cupp", "CeWL / Mentalist / CUPP", "wordlist-gen", C, "GPL-3.0/MIT", [], ""),
+    ("haiti", "haiti", "hash-id", C, "MIT", [], "agent routing aid"),
+    ("cracking-pipeline", "Responder→cracking handoff pipeline", "pipeline", K, "n/a", [SEPARATE_AUTH], "engagement evidence only"),
+    ("sharpweb", "SharpWeb", "local-secret-harvest", K, "GPL-3.0", [SEPARATE_AUTH], "in-scope hosts only"),
+    ("dpapi", "DPAPI extraction", "credential-access", K, "n/a", [SEPARATE_AUTH], "engagement evidence only"),
+]
+
+WIRELESS_MOBILE_HARDWARE = [
+    ("kismet", "Kismet", "wireless-recon", K, "GPL-3.0", [SEPARATE_AUTH], "wireless scope required"),
+    ("hcxdumptool", "hcxdumptool / hcxtools", "wireless-capture", K, "MIT", [SEPARATE_AUTH], "wireless scope required"),
+    ("wifi-coconut", "WiFi Coconut", "wireless-capture", K, "commercial", [SEPARATE_AUTH, LICENSE_REQUIRED], ""),
+    ("bettercap", "bettercap", "on-path", K, "GPL-3.0", [SEPARATE_AUTH], "Wi-Fi/BLE: separate RoE addendum"),
+    ("mobsf", "MobSF", "mobile-analysis", C, "GPL-3.0", [], "API-driven"),
+    ("frida-objection", "Frida / objection", "mobile-instrumentation", K, "MIT", [SEPARATE_AUTH], "owned/authorized devices only"),
+    ("apktool-jadx", "apktool / jadx", "mobile-re", C, "Apache-2.0", [], ""),
+    ("drozer", "Drozer", "mobile-exploitation", K, "BSD-3-Clause", [SEPARATE_AUTH], "owned/authorized devices only"),
+    ("adb-ideviceinstaller", "adb / ideviceinstaller", "device-control", C, "Apache-2.0/LGPL", [SEPARATE_AUTH], "owned devices only"),
+    ("hackrf-rtlsdr-proxmark", "HackRF / RTL-SDR / Proxmark3", "rf-rfid-hardware", K, "mixed", [SEPARATE_AUTH, LAB_ONLY], "hardware-in-loop; legal compliance (radio law) mandatory"),
+    ("saleae", "Saleae / logic analyzers", "signal-capture", K, "commercial", [LAB_ONLY], ""),
+]
+
+REPORTING_PLATFORMS = [
+    ("dradis", "Dradis / PentestCollab / SysReptor", "reporting", S, "commercial/AGPL", [LICENSE_REQUIRED], "AGPL/commercial review"),
+    ("faraday", "Faraday", "reporting", S, "AGPL-3.0/commercial", [LICENSE_REQUIRED], ""),
+    ("osmedeus-rengine", "Osmedeus / reNgine", "orchestration", C, "MIT/GPL-3.0", [], "workflow engines; dependency admission cascades"),
+]
+
+KNOWLEDGE_CORPORA = [
+    ("hacktricks", "HackTricks (local clone)", "knowledge-base", S, "CC-BY-4.0", [], "primary agent knowledge corpus"),
+    ("payloadsallthethings", "PayloadsAllTheThings", "knowledge-base", S, "MIT", [], ""),
+    ("seclists", "SecLists wordlists", "knowledge-base", S, "MIT", [], "mounted read-only"),
+    ("cyberchef", "CyberChef", "encode-decode", S, "Apache-2.0", [], ""),
+    ("wadcoms", "WADComs", "knowledge-base", S, "MIT", [], ""),
+    ("github-dorking", "GitHub dorking", "osint-dorking", C, "web", [], ""),
+]
+
+REGRESSION_LABS = [
+    ("dvwa-juiceshop-webgoat", "DVWA / Juice Shop / WebGoat", "web-lab", S, "mixed", [LAB_ONLY], "deterministic CI targets"),
+    ("goad", "GOAD (Game of Active Directory)", "ad-lab", S, "MIT", [LAB_ONLY], "best agent AD training ground"),
+    ("dreadgoad-adlab", "DreadGOAD / AD-Lab", "ad-lab", S, "mixed", [LAB_ONLY], ""),
+    ("kubernetes-goat", "Kubernetes Goat", "k8s-lab", S, "MIT", [LAB_ONLY], ""),
+    ("htb-thm-vulnhub", "HackTheBox / TryHackMe / VulnHub", "regression-labs", S, "commercial/ToS", [], "evaluation baselines; ToS review"),
+]
+
+OPS_STACK = [
+    ("docker-compose", "Docker/Podman + compose", "isolation", S, "Apache-2.0", [], "per-engagement isolation"),
+    ("terraform", "Terraform", "lab-provisioning", S, "BUSL-1.2/MPL-2.0", [], "disposable target environments"),
+    ("ansible", "Ansible", "lab-provisioning", S, "GPL-3.0", [], ""),
+    ("traefik-caddy", "Traefik / Caddy", "reverse-proxy", S, "MIT/Apache-2.0", [], "tool API fronting"),
+    ("grafana-prometheus-loki", "Grafana / Prometheus / Loki", "telemetry", S, "AGPL-3.0/Apache-2.0", [LICENSE_REQUIRED], "AGPL gate; run telemetry"),
+    ("langfuse-langsmith-phoenix", "Langfuse / LangSmith / Phoenix", "llm-telemetry", S, "mixed", [], "LLM trace + eval"),
+    ("opa-rego", "OPA / Rego", "policy", S, "Apache-2.0", [], "scope/guardrail policy enforcement (complements Cedar)"),
+    ("vault-sops-age", "Vault / SOPS / age", "secrets", S, "MPL-2.0/Apache-2.0/MIT", [], "secrets at rest"),
+]
+
+AGENT_STACK_REFERENCES = [
+    ("litellm", "LiteLLM", "model-routing", S, "MIT", [], "routing + fallback"),
+    ("vllm-ollama", "vLLM / Ollama", "local-inference", S, "Apache-2.0", [], "air-gapped self-hosted inference"),
+    ("temporal", "Temporal", "durable-workflow", S, "MIT", [], "long-running engagements; v3.0 defers adoption until justified"),
+    ("openhands-swe-agent", "OpenHands / SWE-agent", "coding-loop-reference", S, "MIT", [], "patterns to copy, not to import blindly"),
+    ("crewai-autogen-agno", "CrewAI / AutoGen(archived) / Agno", "agent-reference", S, "mixed", [], "role-team patterns; AutoGen historical only"),
+    ("xbow", "XBOW (reference architecture)", "reference", S, "closed", [], "study writeups; not integrable — closed source"),
+    ("pentestgpt-benchmark", "PentestGPT benchmark suite", "reference", S, "MIT", [], "evaluation baseline"),
+    ("big-sleep", "Big Sleep (reference)", "reference", S, "closed", [], "autonomous vuln-discovery patterns (FFmpeg/ImageMagick findings)"),
+    ("aicxx-crs-atlantis", "AIxCC finalist CRS systems (incl. Atlantis)", "reference", S, "mixed", [], "crash-triage + patch-loop patterns; all seven released"),
+    ("ai-ops", "AI-OPS", "reference", S, "open", [], "local-LLM copilot with human gates"),
+    ("general-analysis", "General Analysis", "reference", S, "closed", [], "agent/RAG/MCP/CI-security patterns"),
+    ("nodezero-pentera-hadrian-cobalt", "NodeZero / Pentera / Hadrian / Cobalt Core", "reference", S, "closed/commercial", [], "mine reporting formats + scope models — commercial, reference only"),
+]
+
+WAVE2_GROUPS = [C2_FRAMEWORKS_W2, POST_EXPLOIT_AD, TUNNELING_INFRA, SOCIAL_ENGINEERING,
+                WEB_API_TOOLS, CLOUD_K8S, CREDENTIAL_ATTACKS, WIRELESS_MOBILE_HARDWARE,
+                REPORTING_PLATFORMS, KNOWLEDGE_CORPORA, REGRESSION_LABS, OPS_STACK,
+                AGENT_STACK_REFERENCES]
+
+
+
 def all_entries():
     groups = [CONTAINER_RECON, OSINT_TOOLS, SECRET_SCANNING, DEFENSE_TELEMETRY,
               KVM_HOSTILE, C2_COMMERCIAL, KNOWLEDGE_BASES, CTI_SOURCES, PLATFORMS,
-              AI_RED_TEAM, G9_FAMILY, INTEL_SOURCES_WEB, UNVERIFIED_SOURCES]
+              AI_RED_TEAM, G9_FAMILY, INTEL_SOURCES_WEB, UNVERIFIED_SOURCES,
+              *WAVE2_GROUPS]
     out = []
     for group in groups:
         out.extend(group)
