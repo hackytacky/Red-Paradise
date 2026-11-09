@@ -31,7 +31,8 @@ TOOL_FAMILIES: dict[str, dict] = {
     "sbom-scan": {"schema": {"image_or_dir": "str"}, "adapters": ["grype-syft", "trivy"]},
     "dast": {"schema": {"target": "str", "profile": "str"}, "adapters": ["owasp-zap", "burp-suite-pro", "caido"]},
     "osint-harvest": {"schema": {"domain": "str", "sources": "list[str]"}, "adapters": ["theharvester"]},
-    "dns-query": {"schema": {"domains": "list[str]", "record": "str?"}, "adapters": ["dig"]},
+    "dns-query": {"schema": {"domains": "list[str]", "record": "str?"}, "adapters": ["dig", "dnsrecon"]},
+    "screenshot-recon": {"schema": {"targets": "list[str]"}, "adapters": ["gowitness"]},
     "secret-scanning": {"schema": {"repos": "list[str]", "orgs": "list[str]?"}, "adapters": ["gitleaks", "trufflehog"]},
     "ai-red-team": {"schema": {"target_id": "str", "corpus": "str", "control_version": "str"}, "adapters": ["promptfoo", "garak", "pyrit"]},
 }

@@ -23,6 +23,7 @@ from ..tools.nmap_adapter import dispatch as dispatch_nmap
 from ..tools.web_scanners import dispatch_httpx, dispatch_ffuf, dispatch_nuclei
 from ..tools.recon_tools import dispatch_subfinder, dispatch_masscan, dispatch_testssl
 from ..tools.osint_secret_tools import dispatch_theharvester, dispatch_gitleaks, dispatch_dig
+from ..tools.gowitness_amass_dnsrecon import dispatch_gowitness, dispatch_amass, dispatch_dnsrecon
 
 ADAPTERS: dict = {
     "nmap-scoped": dispatch_nmap,
@@ -35,6 +36,9 @@ ADAPTERS: dict = {
     "theharvester": dispatch_theharvester,
     "gitleaks": dispatch_gitleaks,
     "dig": dispatch_dig,
+    "gowitness": dispatch_gowitness,
+    "amass": dispatch_amass,
+    "dnsrecon": dispatch_dnsrecon,
 }
 
 
@@ -49,6 +53,7 @@ def invoke_tool(
     spec: dict,
     call: dict,
     execute_now: bool = False,
+    collector=None,
 ) -> dict:
     audit: list[dict] = []
 
@@ -110,8 +115,17 @@ def invoke_tool(
     if execute_now:
         run = execute(cmd)
         result["executed"] = True
-        result["run"] = run
+        result["run"] = {"ok": run["ok"], "exit_code": run["exit_code"], "reason": run["reason"]}
         result["ok"] = run["ok"]
         if not run["ok"]:
             result["reason"] = run["reason"] or run["stderr"][:200]
+        # result collector: raw output becomes provenance-tagged evidence;
+        # parsed findings enter as candidates only
+        if collector is not None:
+            rec = collector.ingest_tool_result(
+                tool_id=spec["tool_id"], command=cmd.shell(),
+                stdout=run.get("stdout", ""), stderr=run.get("stderr", ""),
+                targets=spec["target_set"], exit_code=run.get("exit_code"),
+            )
+            result["evidence"] = rec
     return result
