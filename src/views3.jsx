@@ -104,6 +104,50 @@ const STATUS_STYLE_ARCH = {
   reference: "bg-slate-500/15 text-slate-400 border-slate-600/40",
 };
 
+const TIERS = [
+  { name: "Tier 1 — Essential G9 foundations", tone: "red", items: [
+    ["Agent runtime", "LangGraph", "pending comparison with Pydantic AI — durable state and multi-agent workflow control"],
+    ["Authorization", "Cedar", "fine-grained policy decisions"],
+    ["Execution isolation", "G9-specific KVM-backed broker", "independent enforcement of scope and permissions"],
+    ["MCP infrastructure", "ToolHive", "governed tool/server access"],
+    ["Finding verification", "Cloudflare Security Audit methodology", "independent evidence verification"],
+    ["Vulnerability research", "Google Mantis", "hypothesis, analysis, reproduction, and patch workflows"],
+  ]},
+  { name: "Tier 2 — Core cybersecurity capabilities", tone: "amber", items: [
+    ["Reconnaissance", "RedAmon", "graph-oriented attack-surface intelligence"],
+    ["Broad pentesting", "PentAGI 2.2.0+", "after isolation validation — multi-agent security-tool execution"],
+    ["Application security", "Strix", "specialized web/API testing"],
+    ["Reverse engineering", "REA", "evidence-oriented binary and application analysis"],
+    ["Adversary emulation", "Decepticon", "conditional — broader operational agent specialization"],
+    ["Vulnerability research", "OSS-CRS + Buttercup", "fuzzing and patch-validation research"],
+  ]},
+  { name: "Tier 3 — Evaluation and operational intelligence", tone: "cyan", items: [
+    ["AI red teaming", "PyRIT", "adaptive adversarial tests"],
+    ["AI regression testing", "Promptfoo", "repeatable evaluations"],
+    ["Broad LLM probing", "Garak", "additional vulnerability coverage"],
+    ["Agent-security benchmarking", "AgentDojo", "prompt-injection and tool-use attack scenarios"],
+    ["Observability", "OpenTelemetry + Phoenix", "agent telemetry and evaluation"],
+    ["Deterministic code analysis", "Semgrep + Joern", "complementary static-analysis evidence"],
+  ]},
+];
+
+const SUBSYSTEMS = [
+  ["G9 COMMAND", "Mission control, engagement authorization, agent orchestration, model routing", "▣"],
+  ["G9 INTELLIGENCE", "Reconnaissance, OSINT, threat intelligence, attack graphs, persistent memory", "◉"],
+  ["G9 OFFENSE", "Authorized pentesting, AppSec, adversary emulation, reverse engineering", "⚔"],
+  ["G9 RESEARCH", "Vulnerability research, source analysis, fuzzing, exploitability assessment", "◇"],
+  ["G9 DEFENSE", "Detection engineering, defensive validation, attack-to-detection correlation", "⛨"],
+  ["G9 ASSURANCE", "Independent verification, agent-security testing, isolation, telemetry, evaluation", "✓"],
+];
+
+const NEW_DISCOVERIES = [
+  ["Strands Agents Harness SDK", "9.4", "Agent lifecycle control; model portability; MCP; multi-agent graphs; memory/session management", "Benchmark against LangGraph"],
+  ["Anthropic Sandbox Runtime", "9.3", "Filesystem controls; network restrictions; subprocess isolation; MCP sandboxing; execution-policy configuration", "Secondary isolation layer"],
+  ["Graphiti", "9.3", "Temporal graphs; relationship extraction; episodic memory; hybrid retrieval; graph-aware reranking", "Integrate memory concepts; evaluate code"],
+  ["Inspect AI", "9.3", "Agent evaluations; tool-use scenarios; multi-turn testing; custom scorers; reproducible experiments", "Primary evaluation-framework candidate"],
+  ["Snyk Agent Scan", "9.1", "MCP scanning; tool poisoning; agent-skill security; credential-risk detection; malicious-content analysis", "Third-party component admission testing"],
+];
+
 export function ArchitectureView() {
   return (
     <div className="space-y-4">
@@ -181,6 +225,81 @@ export function ArchitectureView() {
           ))}
         </div>
       </Panel>
+
+      <Panel title="Final recommendations — operational priority tiers (docs/architecture/final-recommendations.md)">
+        <div className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+          <span className="text-red-300 font-semibold">Architectural rule (inviolable):</span> security decisions are enforced <span className="text-slate-300 font-semibold">outside the AI model</span>. The model can propose, reason, and request; it cannot grant itself permissions, expand scope, or declare its own exploitation results independently verified. Scores measure expected benefit to G9, not independent proof of security or benchmark superiority — every dependency requires a pinned revision, source audit, dependency analysis, isolated testing, and explicit approval before integration.
+        </div>
+        <div className="grid lg:grid-cols-3 gap-3">
+          {TIERS.map((t) => (
+            <div key={t.name} className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+              <div className={`text-[11px] font-black uppercase tracking-wide mb-2 ${t.tone === "red" ? "text-red-300" : t.tone === "amber" ? "text-amber-300" : "text-cyan-300"}`}>{t.name}</div>
+              <div className="space-y-1.5">
+                {t.items.map(([c, s, r]) => (
+                  <div key={c} className="text-[10.5px] leading-relaxed">
+                    <span className="text-slate-500">{c}: </span>
+                    <span className="text-slate-200 font-bold">{s}</span>
+                    <span className="text-slate-500"> — {r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="The six G9 subsystems — common evidence schema, central authorization">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {SUBSYSTEMS.map(([n, r, icon]) => (
+            <div key={n} className="rounded-lg border border-slate-800 bg-slate-950/60 p-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-5 text-center text-emerald-300">{icon}</span>
+                <span className="text-[12px] font-black text-slate-100">{n}</span>
+              </div>
+              <div className="text-[10.5px] text-slate-500 leading-relaxed mt-0.5">{r}</div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Panel title="Expanded research — new harnesses, memory, and isolation">
+          <div className="space-y-1.5">
+            {NEW_DISCOVERIES.map(([n, v, caps, rec]) => (
+              <div key={n} className="rounded-lg border border-slate-800 bg-slate-950/60 p-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[12px] font-bold text-slate-100">{n}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/40">{v}/10</span>
+                  <span className="ml-auto text-[10px] text-cyan-300 font-semibold">{rec}</span>
+                </div>
+                <div className="text-[10.5px] text-slate-500 leading-relaxed mt-0.5">{caps}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5 text-[10.5px] text-slate-400 leading-relaxed">
+            <span className="font-bold text-cyan-300">Orchestration competition updated:</span> LangGraph vs. Pydantic AI Harness vs. Strands Harness SDK. Also: CALDERA MCP (AI-assisted emulation — lab enclave only, never exposed to untrusted networks) and CyberGym-E2E (920 tasks / 139 projects; staged discover–prove–fix acceptance testing) as the measurable harness-comparison benchmark.
+          </div>
+        </Panel>
+
+        <Panel title="Overall verdict">
+          <div className="space-y-2 text-[11px]">
+            {[
+              ["Best new discovery", "Google Mantis — organized vulnerability-research methodology (research, critique, reproduction, patch-validation) rather than more tools"],
+              ["Best evidence-verification foundation", "Cloudflare Security Audit — structured evidence states, coverage tracking, independent verification; foundational to the G9 Verification Authority"],
+              ["Best agent-runtime candidates", "LangGraph (provisional) and Pydantic AI Harness — direct comparison before the decision is final"],
+              ["Best intelligence combination", "RedAmon + REA — graph-driven reconnaissance plus lower-level reverse-engineering evidence"],
+            ].map(([h, b]) => (
+              <div key={h} className="rounded-lg border border-slate-800 bg-slate-950/60 p-2.5">
+                <div className="font-bold text-emerald-300 text-[11px]">{h}</div>
+                <div className="text-slate-400 leading-relaxed">{b}</div>
+              </div>
+            ))}
+            <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-2.5 font-mono text-[10.5px] text-violet-200 leading-relaxed">
+              LangGraph or Pydantic AI + Cedar + G9 KVM broker + ToolHive + Cloudflare verification + Mantis + RedAmon + PentAGI + Strix + REA + OSS-CRS/Buttercup + PyRIT/Promptfoo/Garak
+            </div>
+          </div>
+        </Panel>
+      </div>
 
       <Panel title="AI Security Studio — G9 AI red-team stack">
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2 text-[11px]">

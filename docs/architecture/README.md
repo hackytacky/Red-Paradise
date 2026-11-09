@@ -11,6 +11,7 @@ differentiate G9 from ordinary AI-pentesting wrappers.
 | [landscape-comparison.md](landscape-comparison.md) | Project landscape: strengths, limitations, capability scoring, category winners, and the five indicators of actual agent intelligence |
 | [agent-and-ai-redteam-frameworks.md](agent-and-ai-redteam-frameworks.md) | General-purpose agent framework rankings, the LangGraph + Pydantic recommendation, and the AI red-team stack (PyRIT / Promptfoo / Garak / DeepTeam / AgentDojo) |
 | [custom-capabilities.md](custom-capabilities.md) | The five custom capabilities that differentiate G9: Evidence Graph, Research Analyst, Verification Authority, Adaptive Scheduler, Adversarial Resilience Layer |
+| [final-recommendations.md](final-recommendations.md) | Final recommendations by operational priority: Tier 1–3 selections, overall verdict, the six G9 subsystems, and expanded research (Strands, Anthropic Sandbox Runtime, Graphiti, Inspect AI, Snyk Agent Scan, CALDERA MCP, CyberGym-E2E) |
 
 ## Core doctrine
 
