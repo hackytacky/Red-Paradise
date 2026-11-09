@@ -71,6 +71,7 @@ export const AGENTS = [
   { id: "socrates", greek: "SOCRATES", tier: "T2 Oversight", role: "Adversarial reviewer — attacks our own chains", model: "g9-judge-32b", tools: [], status: "verifying" },
   { id: "aegis", greek: "AEGIS", tier: "T2 Oversight", role: "Safety gate — veto-only, can block, never approve", model: "g9-aegis-14b", tools: [], status: "idle" },
   { id: "epimetheus", greek: "EPIMETHEUS", tier: "T2 Oversight", role: "Quality/regression judge — benchmark gates", model: "g9-judge-32b", tools: [], status: "idle" },
+  { id: "hypnos", greek: "HYPNOS", tier: "T2 Oversight", role: "OPSEC guardian — stealth plans, operator anonymity, artifact ledger, no-traces close gate", model: "g9-14b-opsec-ft", tools: ["stealth-assess", "identifier-scan", "artifact-ledger"], status: "working" },
   { id: "argus", greek: "ARGUS", tier: "T3 Blue", role: "Vulnerabilities specialist — blue lead, discovery union", model: "g9-32b-vuln-ft", tools: ["variant-analysis", "ai-fuzz", "static-analysis"], status: "working" },
   { id: "talos", greek: "TALOS", tier: "T3 Blue", role: "Malware & reverse engineering (REA-style)", model: "g9-32b-re-ft (local)", tools: ["ghidra-scoped-api", "radare2", "model-file-audit"], status: "working" },
   { id: "metis", greek: "METIS", tier: "T3 Blue", role: "Threat intel — advisory & CVE matching, 24/7 watch", model: "g9-14b-intel-ft", tools: ["advisory-feed", "cve-match"], status: "working" },
