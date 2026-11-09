@@ -51,3 +51,32 @@ engineering hour first).
   them.
 - AFL++ AGPL residual risk recorded at admission; commercial integration
   requires the license review.
+
+## Update: the operator-approved arsenal (superseded by the machine-readable registry)
+
+The operator has approved the full expanded arsenal. Every entry now lives in
+`backend/g9_backend/tools/registry_data.py` with per-entry governance flags,
+enforced by `registry_admission.py`:
+
+- **standard** tools → normal upstream admission (pinned revision, license)
+- **separate_auth** (Metasploit, msfvenom, shellter, hydra, sqlmap, mimikatz,
+  impacket, LaZagne, PCredz, Certify, Coercer, Snaffler, evil-winrm, ligolo-ng,
+  linWinPwn, BeEF, evilginx2, Modlishka, ettercap, mitmproxy, aircrack-ng,
+  Merlin, SpecterInsight, CS-Situational-Awareness-BOF, Pacu, search4faces,
+  goshs, SlackPirate, WaGpScraper) → a **separate RoE addendum** recorded at
+  admission; per-action operator approval on every dispatch
+- **license_required** (Cobalt Strike, Brute Ratel C4, trufflehog AGPL,
+  hashcat-class commercial) → **valid license on record; cracked/unlicensed
+  use is prohibited and never admitted**
+- **legal_gate** (DeHashed, IntelligenceX, Hudson Rock, national breach DBs,
+  4plebs/nzbfriends archives, search4faces, social-platform scrapers) →
+  **legal review on record; use per RoE and applicable law**
+- **lab_only** (CALDERA, Merlin, Cobalt Strike, Brute Ratel) → never exposed
+  to untrusted networks
+- **unverified** (the onion.pet Tor proxy, the G9-family repos pending
+  review, MineSight, hackingtool wrapper) → **not admitted by default**;
+  manual safety review required; excluded from automated pipelines
+
+Adapters implemented so far: nmap · httpx · ffuf · nuclei · subfinder ·
+masscan (rate ceiling from the resource budget, never from flags) ·
+testssl.sh — all following the same enforced pattern.
