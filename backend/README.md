@@ -14,7 +14,8 @@ control plane, Pydantic for structured contracts).
 | `g9_backend/policy/engine.py` | `src/lib/policyEngine.js` | Cedar-style deny-by-default policy decision point; seven checks; precise deny reasons; recorded decisions |
 | `g9_backend/executor/state_machine.py` | `src/lib/approvalStateMachine.js` | CREATED → … → EVIDENCE_PRESERVED with DENIED/REJECTED/INVALIDATED/CANCELLED/FAILED/OUTCOME_UNKNOWN; OUTCOME_UNKNOWN blocks replay until reconciled |
 | `g9_backend/executor/broker.py` | pipeline composition | The execution broker: composes policy → approval-binding → dispatch, records everything in the audit ledger, and routes work to worker classes (trusted service / restricted analysis / hostile research VM) |
-| `g9_backend/api.py` | — | HTTP surface: `POST /policy/evaluate`, `POST /actions` (register + approve + dispatch), `GET /audit` |
+| `g9_backend/executor/container_runtime.py` | worker plane (Stage 02) | Builds the exact hardened `docker run` command (drop=ALL, no-new-privileges, read-only, pid limit, scoped network, ro workdir mount); `execute()` invokes the real Docker CLI — honest failure without a daemon, never a faked run |
+| `g9_backend/tools/nmap_adapter.py` | first tool adapter | Scoped nmap: flags allowlisted (script engine/file-IO forbidden in profile), targets taken ONLY from the authorized target_set, args constructed from the validated spec — never model prose |
 
 ## Run
 
