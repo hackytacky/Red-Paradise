@@ -81,8 +81,18 @@ export function scanToolCall({ agentId, toolId, arguments: args, canaries, scope
 
   if (scopeHosts.length > 0) {
     const hosts = new Set(scopeHosts);
-    const mentioned = urls.map((u) => u.replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/:?#]/)[0]);
-    const out = mentioned.filter((h) => h && !hosts.has(h));
+    const fromUrls = urls.map((u) => u.replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/:?#]/)[0]);
+    /* Also check raw host values in common argument fields — an agent
+       can name an out-of-scope host without embedding it in a URL. */
+    let fromArgs = [];
+    if (args && typeof args === "object") {
+      for (const key of ["host", "hosts", "target", "targets", "hostname", "domain"]) {
+        const v = args[key];
+        if (typeof v === "string") fromArgs.push(v);
+        else if (Array.isArray(v)) fromArgs.push(...v.filter((x) => typeof x === "string"));
+      }
+    }
+    const out = [...fromUrls, ...fromArgs].filter((h) => h && !hosts.has(h));
     if (out.length > 0) findings.push({ tripwire: "out_of_scope_host", detail: `host(s) outside scope allowlist: ${out.join(", ")}` });
   }
 

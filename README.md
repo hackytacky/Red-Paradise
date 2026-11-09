@@ -31,6 +31,31 @@ Demo deployment: all telemetry is simulated. On the G9 host, the same gates and 
 | `/gates` | CERBERUS code policy, approval queue, decision log |
 | `/report` | CALLIOPE owner-facing Markdown report builder |
 | `/setup` | Tool adapters, local model registry, mission configuration |
+| `/architecture` | SPECTRE architecture: diagram, integration priorities, component map, capability tiers, final recommendations |
+| `/evidence` | Evidence Graph + Verification Authority engines, live |
+| `/execution` | Trusted execution: canonical action spec + approval state machine, live |
+| `/resilience` | Tripwire scanner, model-routing scheduler, temporal memory, live |
+| `/arsenal` | Universal tool registry admission + deny-by-default policy gate, live |
+| `/opsec` | HYPNOS: stealth gate, anonymity scan, no-traces close gate, live |
+
+## Implemented engines (`src/lib/`, 92 unit tests)
+
+| Engine | Contract |
+|---|---|
+| `evidenceGraph.js` | Typed evidence nodes, verified-link attack-path reasoning, provenance, dedupe |
+| `verificationAuthority.js` | Hypothesis → … → regression-verified ladder; agents never promote their own findings |
+| `actionSpec.js` | Canonical 16-field action spec; digest-bound approval; tamper invalidates |
+| `approvalStateMachine.js` | CREATED → EVIDENCE_PRESERVED; OUTCOME_UNKNOWN blocks replay until reconciled |
+| `adversarialResilience.js` | Tripwires: canaries, injection, encoded payloads, scope hosts, self-authorization |
+| `agentScheduler.js` | Task-aware routing; approval-gated cloud escalation; VRAM budgeting |
+| `temporalMemory.js` | Expired/superseded facts never resurface as current; never an authorization source |
+| `toolRegistry.js` | Any tool from anywhere via one-time recorded admission; capability grants |
+| `policyEngine.js` | Cedar-style deny-by-default PDP; seven checks; precise deny reasons |
+| `opsecGuardian.js` | Stealth gate, identifier scanning, no-traces artifact ledger + close gate |
+| `auditLedger.js` | Hash-chained tamper-evident activity records; detectable modification |
+| `missionPipeline.js` | Ordered composition: policy → stealth → approval-binding → tripwires |
+
+Architecture docs: [`docs/architecture/`](docs/architecture/README.md) · OPSEC skill: [`skills/opsec-stealth-cleanup/SKILL.md`](skills/opsec-stealth-cleanup/SKILL.md) · Build audit: [`docs/architecture/triple-audit-build-1.md`](docs/architecture/triple-audit-build-1.md)
 
 ## Run
 

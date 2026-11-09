@@ -44,8 +44,13 @@ export function canonicalize(spec) {
   return JSON.stringify(sortValue(spec));
 }
 
+/* The digest covers authorization-relevant content only: the approval
+   reference and the digest itself are excluded — the approval reference
+   IS the binding, so including it would invalidate every approval at
+   validation time. */
 export function digest(spec) {
-  const canonical = canonicalize(spec);
+  const { spec_digest: _d, approval_id: _a, ...content } = spec;
+  const canonical = canonicalize(content);
   /* FNV-1a 64-bit-style double pass, hex-encoded */
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
@@ -75,14 +80,18 @@ export function makeActionSpec(input) {
   return spec;
 }
 
-/* Bind an approval to the exact spec digest. */
+/* Bind an approval to the exact spec digest. The canonical snapshot
+   is stored so pre-execution validation can report exactly which
+   authorization-relevant fields changed, not merely that something did. */
 export function bindApproval(spec, { approvalId, approvedBy, at = null }) {
   if (!approvalId) throw new Error("bindApproval: approvalId is required");
+  const { spec_digest, ...snapshot } = spec;
   return {
     approvalId,
     approvedBy,
     at: at ?? new Date().toISOString(),
     boundDigest: spec.spec_digest,
+    boundCanon: canonicalize(snapshot),
     actionId: spec.action_id,
   };
 }
@@ -92,17 +101,22 @@ export function bindApproval(spec, { approvalId, approvedBy, at = null }) {
    change invalidates the approval. */
 export function validateAgainstApproval(spec, approval) {
   if (!approval) return { ok: false, reason: "no approval bound" };
-  const current = digest({ ...spec, approval_id: approval.approvalId });
+  const current = digest(spec);
   if (current !== approval.boundDigest) {
-    const changed = AUTH_RELEVANT_FIELDS.filter(
-      (f) => canonicalize(spec[f]) !== canonicalize(JSON.parse(approval.boundCanon ?? "{}")[f] ?? spec[f])
-    );
+    let changed = [];
+    if (approval.boundCanon) {
+      const bound = JSON.parse(approval.boundCanon);
+      changed = AUTH_RELEVANT_FIELDS.filter(
+        (f) => canonicalize(spec[f]) !== canonicalize(bound[f])
+      );
+    }
     return {
       ok: false,
+      changed,
       reason: `approval invalidated: action specification changed${changed.length ? ` (${changed.join(", ")})` : ""} — re-approval required`,
     };
   }
-  return { ok: true };
+  return { ok: true, changed: [] };
 }
 
 /* Scope check: every concrete target in the arguments must fall
