@@ -26,11 +26,13 @@ TOOL_FAMILIES: dict[str, dict] = {
     "tls-audit": {"schema": {"target": "str"}, "adapters": ["testssl"]},
     "osint-username": {"schema": {"usernames": "list[str]", "platforms": "list[str]?"}, "adapters": ["sherlock", "maigret"]},
     "osint-email": {"schema": {"emails": "list[str]"}, "adapters": ["holehe", "ghunt"]},
-    "secret-scanning": {"schema": {"repos": "list[str]", "orgs": "list[str]?"}, "adapters": ["gitleaks", "trufflehog"]},
     "identity-recon": {"schema": {"collector": "str", "targets": "list[str]"}, "adapters": ["bloodhound", "sharphound", "azurehound"]},
     "directory-query": {"schema": {"server": "str", "filter": "str (read-only)"}, "adapters": ["ldapsearch", "windapsearch"]},
     "sbom-scan": {"schema": {"image_or_dir": "str"}, "adapters": ["grype-syft", "trivy"]},
     "dast": {"schema": {"target": "str", "profile": "str"}, "adapters": ["owasp-zap", "burp-suite-pro", "caido"]},
+    "osint-harvest": {"schema": {"domain": "str", "sources": "list[str]"}, "adapters": ["theharvester"]},
+    "dns-query": {"schema": {"domains": "list[str]", "record": "str?"}, "adapters": ["dig"]},
+    "secret-scanning": {"schema": {"repos": "list[str]", "orgs": "list[str]?"}, "adapters": ["gitleaks", "trufflehog"]},
     "ai-red-team": {"schema": {"target_id": "str", "corpus": "str", "control_version": "str"}, "adapters": ["promptfoo", "garak", "pyrit"]},
 }
 
