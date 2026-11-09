@@ -11,6 +11,8 @@ from pydantic import BaseModel
 
 from .core.audit_ledger import AuditLedger
 from .executor.broker import ExecutionBroker, KVMWorkerManager
+from .executor.invoke_chain import invoke_tool
+from .ops.budget_controller import BudgetController
 from .policy.engine import PolicyEngine
 
 app = FastAPI(title="G9 SPECTRE control plane", version="0.1.0")
@@ -29,6 +31,10 @@ GRANTS = {"ENG-REDLAB-7": {"tools": {"nmap-scoped", "httpx", "bloodhound-ce"}}}
 _ledger = AuditLedger("ENG-REDLAB-7")
 _engine = PolicyEngine(ENGAGEMENTS, GRANTS)
 _broker = ExecutionBroker(_engine, _ledger, KVMWorkerManager())
+_budget = BudgetController(
+    engagement_id="ENG-REDLAB-7", token_budget=1_000_000,
+    request_rate_per_min=60, cidr_scopes=["lab-api.g9.local", "lab-portal.g9.local", "10.10.0.0/24"],
+)
 
 
 class PolicyRequest(BaseModel):
@@ -92,3 +98,27 @@ def audit(actor: str | None = None, action: str | None = None):
             for r in records
         ],
     }
+
+
+class InvokeRequest(BaseModel):
+    spec: ActionSpecIn
+    call: dict
+    execute_now: bool = False
+
+
+@app.post("/tools/invoke")
+def invoke(req: InvokeRequest):
+    """End-to-end: MCP contract -> policy -> budget/scope -> adapter ->
+    hardened container command (optional real execution)."""
+    result = invoke_tool(
+        engine=_engine, budget=_budget,
+        spec=req.spec.model_dump(), call=req.call,
+        execute_now=req.execute_now,
+    )
+    _ledger.append(
+        actor=req.spec.principal_id,
+        action="tool-invoke",
+        subject=f"{req.spec.tool_id}:{req.spec.action_id}",
+        detail=f"{result.get('ok')}: {result.get('blocked_at', 'cleared')}",
+    )
+    return result
