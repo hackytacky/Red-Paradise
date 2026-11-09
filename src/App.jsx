@@ -10,6 +10,7 @@ import {
 import {
   OpplanView, FindingsView, GatesView, ReportView, SetupView,
 } from "./views2.jsx";
+import { ArchitectureView } from "./views3.jsx";
 
 /* ================================================================
    ROOT APP — G9 RED-OPS // CHIMERA COMMAND
@@ -193,6 +194,7 @@ export default function App() {
               ["/gates", "CERBERUS Gates", "⛨"],
               ["/report", "Owner Report", "▤"],
               ["/setup", "Setup & Adapters", "⚙"],
+              ["/architecture", "SPECTRE Architecture", "◫"],
             ].map(([to, label, icon]) => (
               <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold border ${isActive ? "bg-red-600/15 text-red-200 border-red-500/40" : "text-slate-400 border-transparent hover:bg-slate-900 hover:text-slate-200"}`}>
                 <span className="w-4 text-center">{icon}</span> {label}
@@ -218,6 +220,7 @@ export default function App() {
               <Route path="/gates" element={<GatesView approvals={approvals} gateLog={gateLog} onDecide={decide} mission={mission} />} />
               <Route path="/report" element={<ReportView findings={findings} chains={CHAINS} mission={mission} onMarkReported={markReported} />} />
               <Route path="/setup" element={<SetupView />} />
+              <Route path="/architecture" element={<ArchitectureView />} />
             </Routes>
           </main>
         </div>
