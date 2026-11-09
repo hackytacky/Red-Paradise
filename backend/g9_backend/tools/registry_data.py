@@ -155,6 +155,9 @@ CTI_SOURCES = [
     ("censys", "Censys", "attack-surface-intel", S, "commercial-api", [], "API key admission"),
     ("abusech", "abuse.ch feeds", "cti-feed", S, "free-api", [], "URLhaus/ThreatFox/MalwareBazaar/Feodo/SSLBL/YARAify — metadata-level queries only"),
     ("otx", "AlienVault OTX", "cti-feed", S, "free-api", [], "API key admission"),
+    ("identity-vault", "Engagement identity vault", "engagement-identity", S, "in-house", [SEPARATE_AUTH], "temp/anonymous identities for operator-registered accounts only; phishing-class purposes need the separate RoE addendum"),
+    ("simplelogin", "SimpleLogin (self-hosted alias domain)", "engagement-identity", S, "MIT", [], "operator-owned alias domain required at admission"),
+    ("anonaddy", "AnonAddy (self-hosted alias domain)", "engagement-identity", S, "MIT", [], "operator-owned alias domain required at admission"),
     ("tidal-cyber", "Tidal Cyber", "threat-informed-defense", S, "commercial", [], "ATT&CK mapping reference"),
     ("control-validation-compass", "Control Validation Compass", "threat-informed-defense", S, "commercial", [], ""),
 ]

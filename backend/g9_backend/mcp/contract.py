@@ -36,6 +36,7 @@ TOOL_FAMILIES: dict[str, dict] = {
     "secret-scanning": {"schema": {"repos": "list[str]", "orgs": "list[str]?"}, "adapters": ["gitleaks", "trufflehog"]},
     "ai-red-team": {"schema": {"target_id": "str", "corpus": "str", "control_version": "str"}, "adapters": ["promptfoo", "garak", "pyrit"]},
     "intel-feed": {"schema": {"targets": "list[str]", "feed": "str? (allowlisted)", "flags": "list[str]? (allowlisted)"}, "adapters": ["shodan", "censys", "abusech", "otx"]},
+    "identity-session": {"schema": {"account_id": "str (operator-registered)", "service": "str", "purpose": "str (allowlisted)"}, "adapters": ["identity-vault"]},
 }
 
 
