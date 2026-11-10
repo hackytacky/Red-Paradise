@@ -1,0 +1,44 @@
+# G9 host runtime — the REAL full test run on the operator's machine.
+#
+#   docker compose -f deploy/docker-compose.host.yml up -d lab-target
+#   ./scripts/g9-run-host.sh
+#
+# Three pieces:
+#   lab-target : the deliberately flawed loopback-style service the
+#                pipeline runs against (same weaknesses as the
+#                in-process LabTarget: exposed /.env, /admin,
+#                /backup.zip, ancient banner, no TLS, no security
+#                headers)
+#   backend    : the FastAPI control plane (loopback only)
+#   frontend   : the Vite build served statically
+#
+# The tool containers (nmap/nuclei/httpx/ffuf/testssl/...) are pulled
+# and PINNED via scripts/g9-pin-images.sh at admission — never :latest
+# in a real engagement. Nothing here exposes a public port: the
+# backend binds 127.0.0.1, the lab target is only reachable from the
+# backend network.
+
+services:
+  lab-target:
+    build: ../backend/g9_backend/lab/container
+    networks: [g9-net]
+    # no ports: reachable only inside the compose network
+
+  backend:
+    build: ../backend
+    environment:
+      - G9_LAB_TARGET=lab-target:8080
+    ports:
+      - "127.0.0.1:8700:8700"
+    networks: [g9-net]
+    depends_on: [lab-target]
+
+  frontend:
+    build: ..
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on: [backend]
+
+networks:
+  g9-net:
+    driver: bridge
