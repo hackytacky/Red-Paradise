@@ -15,6 +15,7 @@ differentiate G9 from ordinary AI-pentesting wrappers.
 | [adapter-approval-list.md](adapter-approval-list.md) | The full tool arsenal for operator admission: container-class scanners, KVM-class research tools, and the AI red-team stack, with licenses and standing rules |
 | [feed-adapters.md](feed-adapters.md) | Threat-intel feed adapters (Shodan, Censys, abuse.ch, AlienVault OTX) behind the same gated chain — API keys passed as env-var names only, never on the command line |
 | [persistence.md](persistence.md) | Stage 04 durable storage behind the existing contracts: SQLite reference store, tampered-ledger refusal on load, Postgres/Neo4j as host-side drop-ins |
+| [full-test-run.md](full-test-run.md) | The one-command full test run: lab mode (loopback target + native adapters, works anywhere) and host mode (compose + pinned tool containers on the G9 host) |
 | [standout-capabilities.md](standout-capabilities.md) | The four capabilities competitors lack: Defense Cell (purple detection correlation), AI Security Studio (injection corpus + regression gate), Research Loop (Mantis-style zero-day pipeline), Advisory Watch (24/7 mode) |
 | [isolation-decision.md](isolation-decision.md) | Docker vs KVM decision: hybrid isolation — containers for restricted analysis, KVM as the outer boundary for hostile research; hostile work never downgrades to a container |
 | [opsec-stealth-cleanup.md](opsec-stealth-cleanup.md) | OPSEC subsystem: HYPNOS guardian — per-phase stealth gate, operator anonymity scanning, and the no-traces artifact ledger + engagement close gate |

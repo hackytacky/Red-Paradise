@@ -17,6 +17,7 @@ import { ResilienceView } from "./views6.jsx";
 import { ArsenalView } from "./views7.jsx";
 import { OpsecView } from "./views8.jsx";
 import { StandoutView } from "./views9.jsx";
+import { LiveRunView } from "./views10.jsx";
 
 /* ================================================================
    ROOT APP — G9 RED-OPS // CHIMERA COMMAND
@@ -207,6 +208,7 @@ export default function App() {
               ["/arsenal", "Tool Arsenal", "⚒"],
               ["/opsec", "OPSEC · HYPNOS", "☾"],
               ["/standout", "Standout Capabilities", "★"],
+              ["/live", "Live Run (real)", "▶"],
             ].map(([to, label, icon]) => (
               <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold border ${isActive ? "bg-red-600/15 text-red-200 border-red-500/40" : "text-slate-400 border-transparent hover:bg-slate-900 hover:text-slate-200"}`}>
                 <span className="w-4 text-center">{icon}</span> {label}
@@ -239,6 +241,7 @@ export default function App() {
               <Route path="/arsenal" element={<ArsenalView />} />
               <Route path="/opsec" element={<OpsecView />} />
               <Route path="/standout" element={<StandoutView />} />
+              <Route path="/live" element={<LiveRunView />} />
             </Routes>
           </main>
         </div>

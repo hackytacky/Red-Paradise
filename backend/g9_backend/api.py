@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from .core.audit_ledger import AuditLedger
 from .executor.broker import ExecutionBroker, KVMWorkerManager
+from .lab import LabMission
 from .executor.invoke_chain import invoke_tool
 from .ops.budget_controller import BudgetController
 from .policy.engine import PolicyEngine
@@ -122,3 +123,40 @@ def invoke(req: InvokeRequest):
         detail=f"{result.get('ok')}: {result.get('blocked_at', 'cleared')}",
     )
     return result
+
+
+# ---------------------------------------------------------------- lab run
+# The full end-to-end active mission against the loopback lab target.
+# The lab target binds 127.0.0.1 with an ephemeral port; the mission
+# stops the target when the run completes.
+
+_lab_state: dict = {"report": None, "mission": None}
+
+
+@app.post("/lab/run")
+def lab_run(durable: bool = False):
+    """Run the full active mission now: policy → budget → lab-native
+    adapters → real execution → evidence → candidates → deterministic
+    verification → report."""
+    mission = LabMission()
+    try:
+        report = mission.run()
+    finally:
+        mission.close()
+    _lab_state["report"] = report
+    _ledger.append(actor="operator", action="lab.run",
+                   detail=f"candidates={report['candidates']} reproduced={report['reproduced']}")
+    return report
+
+
+@app.get("/lab/report")
+def lab_report():
+    if _lab_state["report"] is None:
+        return {"ok": False, "reason": "no lab run yet — POST /lab/run first"}
+    return _lab_state["report"]
+
+
+@app.get("/lab/arsenal")
+def lab_arsenal():
+    from .lab.native_adapters import LAB_ADAPTERS
+    return {"ok": True, "lab_tools": sorted(LAB_ADAPTERS)}
