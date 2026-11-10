@@ -23,10 +23,22 @@ export function LiveRunView() {
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
   const [apiUp, setApiUp] = useState(null);
+  const [mode, setMode] = useState("autonomous");
+  const [pending, setPending] = useState([]);
 
   useEffect(() => {
     g9api.labArsenal().then((r) => setApiUp(!!r.ok));
   }, []);
+
+  async function refreshPending() {
+    const r = await g9api.labPending();
+    if (r.ok) setPending(r.pending || []);
+  }
+
+  async function approve(actionId) {
+    await g9api.labApprove(actionId);
+    await refreshPending();
+  }
 
   async function run() {
     setRunning(true);
@@ -61,13 +73,44 @@ export function LiveRunView() {
             candidate). Ledger is hash-chained and verified in the report.
           </div>
         </div>
-        <button
-          onClick={run}
-          disabled={running}
-          className={`px-4 py-2 rounded-lg text-[12px] font-bold ${running ? "bg-slate-700 text-slate-400" : "bg-red-600 hover:bg-red-500 text-white"}`}
-        >
-          {running ? "RUNNING — full active chain…" : "▶ RUN FULL ACTIVE MISSION"}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 text-[11px]">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">mode</span>
+            {["autonomous", "hitl", "manual"].map((m) => (
+              <button key={m} onClick={() => setMode(m)} disabled={running}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold border ${mode === m ? "bg-cyan-600/20 text-cyan-200 border-cyan-500/50" : "text-slate-400 border-slate-700 hover:bg-slate-800"}`}>
+                {m === "hitl" ? "human-in-the-loop" : m}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={async () => { await run(); await refreshPending(); }}
+            disabled={running}
+            className={`px-4 py-2 rounded-lg text-[12px] font-bold ${running ? "bg-slate-700 text-slate-400" : "bg-red-600 hover:bg-red-500 text-white"}`}
+          >
+            {running ? "RUNNING — full active chain…" : "▶ RUN FULL ACTIVE MISSION"}
+          </button>
+          <button onClick={refreshPending} className="px-3 py-2 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            refresh pending
+          </button>
+        </div>
+        {mode !== "autonomous" && (
+          <div className="mt-2 text-[10.5px] text-slate-500">
+            {mode === "hitl" ? "human-in-the-loop: low-impact actions auto-execute; high-impact (portscan, content discovery) queue below for your approval" : "manual: every action queues below — nothing executes without your approval"}
+          </div>
+        )}
+        {pending.length > 0 && (
+          <div className="mt-3 space-y-1.5">
+            {pending.map((p) => (
+              <div key={p.action_id} className="flex items-center gap-3 px-3 py-2 rounded border border-amber-500/40 bg-amber-500/10 text-[11px] font-mono">
+                <span className="text-amber-300 font-bold">AWAITING APPROVAL</span>
+                <span className="text-slate-200">{p.tool}</span>
+                <span className="text-slate-500">{p.target}</span>
+                <button onClick={() => approve(p.action_id)} className="ml-auto px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black">APPROVE & EXECUTE</button>
+              </div>
+            ))}
+          </div>
+        )}
         {error && <div className="mt-3 px-3 py-2 rounded bg-red-500/10 border border-red-500/40 text-red-300 text-[11px] font-mono">{error}</div>}
       </Panel>
 

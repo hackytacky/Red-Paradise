@@ -21,12 +21,14 @@ import time
 from ..core.audit_ledger import AuditLedger
 from ..evidence import EvidenceGraph, ResultCollector
 from ..ops import BudgetController, BudgetError
+from ..ops.autonomy import AutonomyController
 from ..policy.engine import PolicyEngine
 from ..storage import SqliteEvidenceStore, SqliteLedgerStore, durable_graph, durable_ledger
 from .native_adapters import LAB_ADAPTERS
 from .target import LabTarget
 
 LAB_TOOLS = set(LAB_ADAPTERS)
+HIGH_IMPACT_LAB_TOOLS = {"portscan-scoped", "content-discovery"}
 PHASES = [
     ("recon", ["portscan-scoped", "http-probe"]),
     ("tls", ["tls-audit"]),
@@ -55,8 +57,10 @@ def _spec(engagement_id: str, principal: str, tool_id: str, target: str, args: d
 
 
 class LabMission:
-    def __init__(self, *, db_path: str | None = None, engagement_id: str = "ENG-LAB-1"):
+    def __init__(self, *, db_path: str | None = None, engagement_id: str = "ENG-LAB-1",
+                 mode: str = "autonomous"):
         self.engagement_id = engagement_id
+        self.autonomy = AutonomyController(mode=mode, engagement_id=engagement_id)
         self.target = LabTarget().start()
         self.http_target = f"127.0.0.1:{self.target.http_port}"
         self.debug_target = f"127.0.0.1:{self.target.debug_port}"
@@ -98,6 +102,21 @@ class LabMission:
         })
         if decision.effect == "deny":
             return {"ok": False, "blocked_at": "policy", "reasons": decision.reasons}
+        verdict = self.autonomy.decide(
+            {"action_id": spec["action_id"], "high_impact": tool_id in HIGH_IMPACT_LAB_TOOLS,
+             "spec": spec, "target": target},
+            decision.effect,
+        )
+        if verdict == "await_approval":
+            return {"ok": False, "blocked_at": "autonomy", "pending": True,
+                    "action_id": spec["action_id"], "tool": tool_id,
+                    "reason": f"mode={self.autonomy.mode}: operator approval required"}
+        if verdict == "refuse":
+            return {"ok": False, "blocked_at": "autonomy", "reason": "refused"}
+        return self._execute_gated(spec, target)
+
+    def _execute_gated(self, spec: dict, target: str) -> dict:
+        tool_id = spec["tool_id"]
         try:
             check = self.budget.check_target(target)
             if not check["ok"]:
@@ -120,6 +139,25 @@ class LabMission:
             stdout=run["stdout"], stderr="", targets=[target], exit_code=run["exit_code"],
         )
         return {"ok": True, "tool": tool_id, "target": target, "evidence": rec}
+
+    def approve_pending(self, action_id: str) -> dict:
+        """Operator approves a queued action - it executes NOW through
+        the same budget/scope gates. The approval is recorded."""
+        action = self.autonomy.pending.get(action_id)
+        if action is None:
+            return {"ok": False, "reason": f"no pending action {action_id!r}"}
+        self.autonomy.approve(action_id, "operator")
+        spec = action["spec"]
+        self.ledger.append("operator", "action.approve", subject=action_id,
+                           detail=f"tool={spec['tool_id']} target={spec['target_set'][0]}")
+        return self._execute_gated(spec, spec["target_set"][0])
+
+    def pending_actions(self) -> list[dict]:
+        return [
+            {"action_id": a, "tool": act["spec"]["tool_id"], "target": act["target"],
+             "high_impact": act.get("high_impact", False)}
+            for a, act in self.autonomy.pending.items()
+        ]
 
     # ---------------------------------------------------------- the run
 

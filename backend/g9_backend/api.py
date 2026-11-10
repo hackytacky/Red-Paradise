@@ -134,18 +134,24 @@ _lab_state: dict = {"report": None, "mission": None}
 
 
 @app.post("/lab/run")
-def lab_run(durable: bool = False):
+def lab_run(mode: str = "autonomous"):
     """Run the full active mission now: policy → budget → lab-native
     adapters → real execution → evidence → candidates → deterministic
-    verification → report."""
-    mission = LabMission()
+    verification → report. mode: autonomous | hitl | manual."""
+    prev = _lab_state.get("mission")
+    if prev is not None:
+        prev.close()
+    mission = LabMission(mode=mode)
+    _lab_state["mission"] = mission
     try:
         report = mission.run()
-    finally:
+    except Exception as e:
         mission.close()
+        _lab_state["mission"] = None
+        return {"ok": False, "reason": str(e)}
     _lab_state["report"] = report
     _ledger.append(actor="operator", action="lab.run",
-                   detail=f"candidates={report['candidates']} reproduced={report['reproduced']}")
+                   detail=f"mode={mode} candidates={report['candidates']} reproduced={report['reproduced']}")
     return report
 
 
@@ -160,3 +166,73 @@ def lab_report():
 def lab_arsenal():
     from .lab.native_adapters import LAB_ADAPTERS
     return {"ok": True, "lab_tools": sorted(LAB_ADAPTERS)}
+
+
+@app.get("/lab/pending")
+def lab_pending():
+    m = _lab_state.get("mission")
+    if m is None:
+        return {"ok": False, "reason": "no active mission"}
+    return {"ok": True, "mode": m.autonomy.mode, "pending": m.pending_actions()}
+
+
+@app.post("/lab/approve")
+def lab_approve(action_id: str):
+    m = _lab_state.get("mission")
+    if m is None:
+        return {"ok": False, "reason": "no active mission"}
+    return m.approve_pending(action_id)
+
+
+@app.post("/lab/mode")
+def lab_mode(mode: str):
+    """Operator switches the active mission's autonomy mode."""
+    m = _lab_state.get("mission")
+    if m is None:
+        return {"ok": False, "reason": "no active mission"}
+    return m.autonomy.set_mode(mode, "operator")
+
+
+# ------------------------------------------------- admission desk (live)
+
+class AdmitRequest(BaseModel):
+    tool_id: str
+    proofs: dict
+
+
+@app.get("/arsenal/registry")
+def arsenal_registry(search: str | None = None):
+    """The full admitted-candidate arsenal with per-entry gates —
+    usable at any time via one-time recorded admission."""
+    from .tools.registry_admission import required_proofs, validate_registry
+    entries = validate_registry()
+    if search:
+        s = search.lower()
+        entries = [e for e in entries if s in e["id"] or s in e["name"].lower() or s in e["category"]]
+    return {"ok": True, "total": len(entries), "entries": [
+        {**e, "required_proofs": required_proofs(e["id"])} for e in entries
+    ]}
+
+
+@app.post("/arsenal/admit")
+def arsenal_admit(req: AdmitRequest):
+    """One-time recorded admission: every flagged proof must be present
+    and truthy; UNVERIFIED entries need a manual-review override."""
+    from .tools.registry_admission import admit
+    result = admit(req.tool_id, req.proofs)
+    _ledger.append(actor="operator", action="arsenal.admit",
+                   subject=req.tool_id, detail=str(result.get("result", result.get("reason"))))
+    return result
+
+
+@app.get("/intel/sources")
+def intel_sources(category: str | None = None, flag: str | None = None):
+    """The full intel source registry (542 sources) with governance
+    flags — queryable at any time."""
+    from .intel import all_sources
+    srcs = all_sources()
+    if category:
+        srcs = [s for s in srcs if s["category"] == category]
+    if flag:
+        srcs = [s for s in srcs if flag in s["flags"]]
+    return {"ok": True, "total": len(srcs), "sources": srcs}

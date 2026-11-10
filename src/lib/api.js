@@ -23,9 +23,15 @@ async function call(path, options = {}) {
 
 export const g9api = {
   base: BASE,
-  runLabMission: () => call("/lab/run", { method: "POST" }),
+  runLabMission: (mode = "autonomous") => call(`/lab/run?mode=${mode}`, { method: "POST" }),
   labReport: () => call("/lab/report"),
   labArsenal: () => call("/lab/arsenal"),
+  labPending: () => call("/lab/pending"),
+  labApprove: (actionId) => call(`/lab/approve?action_id=${encodeURIComponent(actionId)}`, { method: "POST" }),
+  labMode: (mode) => call(`/lab/mode?mode=${mode}`, { method: "POST" }),
+  arsenalRegistry: (search = "") => call(`/arsenal/registry${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  arsenalAdmit: (toolId, proofs) => call("/arsenal/admit", { method: "POST", body: JSON.stringify({ tool_id: toolId, proofs }) }),
+  intelSources: (category = "", flag = "") => call(`/intel/sources${category ? `?category=${encodeURIComponent(category)}` : ""}${flag ? `${category ? "&" : "?"}flag=${encodeURIComponent(flag)}` : ""}`),
   audit: () => call("/audit"),
   policyEvaluate: (req) => call("/policy/evaluate", { method: "POST", body: JSON.stringify(req) }),
   invokeTool: (spec, callArgs, executeNow = false) =>
