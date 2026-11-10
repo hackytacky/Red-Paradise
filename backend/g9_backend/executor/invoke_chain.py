@@ -25,6 +25,11 @@ from ..tools.recon_tools import dispatch_subfinder, dispatch_masscan, dispatch_t
 from ..tools.osint_secret_tools import dispatch_theharvester, dispatch_gitleaks, dispatch_dig
 from ..tools.gowitness_amass_dnsrecon import dispatch_gowitness, dispatch_amass, dispatch_dnsrecon
 from ..tools.feed_adapters import dispatch_shodan, dispatch_censys, dispatch_abusech, dispatch_otx
+from ..tools.wave4_adapters import (
+    dispatch_owasp_zap, dispatch_caido, dispatch_grype_syft, dispatch_trivy,
+    dispatch_ldapsearch, dispatch_windapsearch, dispatch_bloodhound,
+    dispatch_sharphound, dispatch_azurehound, dispatch_pyrit,
+)
 from ..tools.wave3_adapters import (
     dispatch_sherlock, dispatch_maigret, dispatch_holehe, dispatch_ghunt, dispatch_trufflehog,
     dispatch_gobuster, dispatch_feroxbuster, dispatch_sublist3r, dispatch_whatweb,
@@ -57,6 +62,11 @@ ADAPTERS: dict = {
     "exiftool": dispatch_exiftool, "hachoir": dispatch_hachoir,
     "dnstwist": dispatch_dnstwist, "hakrawler": dispatch_hakrawler,
     "promptfoo": dispatch_promptfoo, "garak": dispatch_garak,
+    "owasp-zap": dispatch_owasp_zap, "caido": dispatch_caido,
+    "grype-syft": dispatch_grype_syft, "trivy": dispatch_trivy,
+    "ldapsearch": dispatch_ldapsearch, "windapsearch": dispatch_windapsearch,
+    "bloodhound": dispatch_bloodhound, "sharphound": dispatch_sharphound,
+    "azurehound": dispatch_azurehound, "pyrit": dispatch_pyrit,
 }
 
 
