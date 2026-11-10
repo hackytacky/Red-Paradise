@@ -117,3 +117,22 @@ class TestLabTargetLoopbackOnly:
                 assert "127.0.0.1" in scope
         finally:
             m.close()
+
+
+class TestGrantIsolation:
+    def test_grant_mutation_never_leaks_across_missions(self):
+        """Regression: an earlier mission's grant mutation (e.g. a test
+        discarding a tool) must never strip tools from later missions —
+        the grants set is per-mission, never module-level shared."""
+        m1 = LabMission()
+        try:
+            m1.engine.grants[m1.engagement_id]["tools"].discard("tls-audit")
+            assert "tls-audit" not in m1.engine.grants[m1.engagement_id]["tools"]
+        finally:
+            m1.close()
+        m2 = LabMission()
+        try:
+            r = m2._invoke("tls-audit", m2.http_target)
+            assert r["ok"], r  # the later mission still has its full grant
+        finally:
+            m2.close()

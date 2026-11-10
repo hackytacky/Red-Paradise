@@ -25,6 +25,12 @@ from ..tools.recon_tools import dispatch_subfinder, dispatch_masscan, dispatch_t
 from ..tools.osint_secret_tools import dispatch_theharvester, dispatch_gitleaks, dispatch_dig
 from ..tools.gowitness_amass_dnsrecon import dispatch_gowitness, dispatch_amass, dispatch_dnsrecon
 from ..tools.feed_adapters import dispatch_shodan, dispatch_censys, dispatch_abusech, dispatch_otx
+from ..tools.wave3_adapters import (
+    dispatch_sherlock, dispatch_maigret, dispatch_holehe, dispatch_ghunt, dispatch_trufflehog,
+    dispatch_gobuster, dispatch_feroxbuster, dispatch_sublist3r, dispatch_whatweb,
+    dispatch_exiftool, dispatch_hachoir, dispatch_dnstwist, dispatch_hakrawler,
+    dispatch_promptfoo, dispatch_garak,
+)
 
 ADAPTERS: dict = {
     "nmap-scoped": dispatch_nmap,
@@ -44,6 +50,13 @@ ADAPTERS: dict = {
     "censys": dispatch_censys,
     "abusech": dispatch_abusech,
     "otx": dispatch_otx,
+    "sherlock": dispatch_sherlock, "maigret": dispatch_maigret,
+    "holehe": dispatch_holehe, "ghunt": dispatch_ghunt, "trufflehog": dispatch_trufflehog,
+    "gobuster": dispatch_gobuster, "feroxbuster": dispatch_feroxbuster,
+    "sublist3r": dispatch_sublist3r, "wappalyzer-whatweb": dispatch_whatweb,
+    "exiftool": dispatch_exiftool, "hachoir": dispatch_hachoir,
+    "dnstwist": dispatch_dnstwist, "hakrawler": dispatch_hakrawler,
+    "promptfoo": dispatch_promptfoo, "garak": dispatch_garak,
 }
 
 

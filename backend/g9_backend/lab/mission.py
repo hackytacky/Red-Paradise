@@ -71,7 +71,7 @@ class LabMission:
                 "roe_signed": True,
                 "principals": {"agent:chimera-lab": {"revoked": False}},
             }},
-            grants={engagement_id: {"tools": LAB_TOOLS}},
+            grants={engagement_id: {"tools": set(LAB_TOOLS)}},  # copy: grant mutation must never leak across missions
         )
         self.budget = BudgetController(
             engagement_id=engagement_id, token_budget=50_000,

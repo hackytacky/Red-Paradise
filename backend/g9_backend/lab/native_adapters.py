@@ -59,7 +59,7 @@ def portscan_scoped(spec: dict) -> dict:
         if not (1 <= p <= 65535):
             raise AdapterArgError(f"port {p} out of range")
         try:
-            with socket.create_connection((host, p), timeout=1.0):
+            with socket.create_connection((host, p), timeout=3.0):
                 out.append(_emit("open-port", f"{host}:{p}", "info", {"matched_at": f"tcp/{p}"}))
         except OSError:
             continue
@@ -68,7 +68,7 @@ def portscan_scoped(spec: dict) -> dict:
 
 def http_probe(spec: dict) -> dict:
     host, port = _host_port(spec)
-    conn = http.client.HTTPConnection(host, port, timeout=5)
+    conn = http.client.HTTPConnection(host, port, timeout=10)
     try:
         conn.request("GET", "/", headers={"User-Agent": "g9-lab-probe/1.0"})
         resp = conn.getresponse()
@@ -89,7 +89,7 @@ def http_probe(spec: dict) -> dict:
 
 def header_audit(spec: dict) -> dict:
     host, port = _host_port(spec)
-    conn = http.client.HTTPConnection(host, port, timeout=5)
+    conn = http.client.HTTPConnection(host, port, timeout=10)
     try:
         conn.request("GET", "/", headers={"User-Agent": "g9-lab-probe/1.0"})
         resp = conn.getresponse()
@@ -111,7 +111,7 @@ def content_discovery(spec: dict) -> dict:
     host, port = _host_port(spec)
     lines = []
     for path in DISCOVERY_PATHS:
-        conn = http.client.HTTPConnection(host, port, timeout=5)
+        conn = http.client.HTTPConnection(host, port, timeout=10)
         try:
             conn.request("GET", path, headers={"User-Agent": "g9-lab-probe/1.0"})
             resp = conn.getresponse()
@@ -133,7 +133,7 @@ def tls_audit(spec: dict) -> dict:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     try:
-        with socket.create_connection((host, port), timeout=5) as sock:
+        with socket.create_connection((host, port), timeout=10) as sock:
             with ctx.wrap_socket(sock, server_hostname=host):
                 return {"tool_id": "tls-audit", "stdout": "", "exit_code": 0}
     except Exception:
