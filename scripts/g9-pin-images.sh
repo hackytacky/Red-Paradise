@@ -1,64 +1,81 @@
 #!/usr/bin/env bash
-# Admission step: pull every tool image and PIN it by digest.
-# :latest is never used in a real engagement — this script records
-# the digest the operator admits, so the hardened command builds run
-# against exactly what was reviewed.
+# Admission step: pull remote images and BUILD local images, pinning
+# every one by digest. :latest is never used in a real engagement —
+# this script records the digest the operator admits, so the hardened
+# command builds run against exactly what was reviewed.
 #
-# NOTE: the list is generated from the adapter image constants. Some
-# names are placeholders pending admission — a pull failure prints
-# WARN and skips; the operator replaces those with the vetted image
-# (or builds it locally) before qualifying the tool.
+# Local images (deploy/images/<tool>/Dockerfile) are built with the
+# source vendored by the operator (see each Dockerfile's header note);
+# the build is offline after vendoring.
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
-IMAGES=(
-  "aboul3la/sublist3r"
-  "anchore/grype"
-  "anchore/syft"
-  "aquasec/trivy"
-  "azurehound"
-  "bitnami/openldap"
-  "bloodhound/bloodhound"
-  "caido/caido"
-  "cazzzer/amass"
-  "dnsrecon"
-  "drwetter/testssl.sh"
-  "elceef/dnstwist"
-  "epi052/feroxbuster"
-  "exiftool/exiftool"
-  "ffuf/ffuf"
-  "garak/garak"
-  "ghcr.io/zaproxy/zaproxy"
-  "gobuster/gobuster"
-  "hachoir/hachoir"
-  "hakluke/hakrawler"
-  "holehe/holehe"
-  "lepidge/gowitness"
-  "mnbf9r3cr01/masscan"
-  "mxrch/ghunt"
+REMOTE_IMAGES=(
   "projectdiscovery/nuclei"
   "projectdiscovery/subfinder"
-  "promptfoo/promptfoo"
-  "pyrit/pyrit"
   "secureideas/httpx"
-  "sharphound"
+  "ffuf/ffuf"
+  "mnbf9r3cr01/masscan"
+  "drwetter/testssl.sh"
+  "vanhausertheharvester/theharvester"
+  "zricethezav/gitleaks"
+  "ubuntu/dig"
+  "anchore/grype"
+  "aquasec/trivy"
+  "ghcr.io/zaproxy/zaproxy"
+  "hypnza/sublist3r"
+  "cazzzer/amass"
+  "lepidge/gowitness"
+  "trufflesecurity/trufflehog"
   "sherlock/sherlock"
   "soxoj/maigret"
-  "trufflesecurity/trufflehog"
-  "ubuntu/dig"
-  "vanhausertheharvester/theharvester"
+  "elceef/dnstwist"
+  "gobuster/gobuster"
+  "epi052/feroxbuster"
+)
+
+LOCAL_IMAGES=(
   "whatweb"
   "windapsearch"
-  "zricethezav/gitleaks"
+  "dnsrecon"
+  "exiftool"
+  "hachoir"
+  "holehe"
+  "ghunt"
+  "garak"
+  "promptfoo"
+  "pyrit"
+  "azurehound"
+  "caido"
 )
 
 mkdir -p deploy/pinned
 : > deploy/pinned/images.digests
-for img in "${IMAGES[@]}"; do
+
+echo "== pulling + pinning remote images =="
+for img in "${REMOTE_IMAGES[@]}"; do
   digest="$(docker pull "${img}:latest" 2>/dev/null | grep -oP 'Digest: \Ksha256:[a-f0-9]+' | head -1 || true)"
   if [ -n "$digest" ]; then
     echo "${img}@${digest}" | tee -a deploy/pinned/images.digests
   else
-    echo "WARN: could not pin ${img} — verify the image name at admission (or build locally: docker build -t ${img} .)" >&2
+    echo "WARN: could not pin ${img} — verify the image name at admission" >&2
   fi
 done
+
+echo "== building + pinning local images (deploy/images/*) =="
+for tool in "${LOCAL_IMAGES[@]}"; do
+  dir="deploy/images/${tool}"
+  if [ ! -f "${dir}/Dockerfile" ]; then
+    echo "WARN: no Dockerfile for ${tool} — skipped" >&2
+    continue
+  fi
+  if ! docker build -q -t "g9/${tool}:latest" "$dir" >/dev/null 2>"deploy/pinned/${tool}.build.log"; then
+    echo "WARN: build failed for g9/${tool} — see deploy/pinned/${tool}.build.log (vendor the source first: see the Dockerfile header)" >&2
+    continue
+  fi
+  digest="$(docker image inspect "g9/${tool}:latest" --format '{{index .RepoDigests 0}}' 2>/dev/null | grep -oP 'sha256:[a-f0-9]+' || docker image inspect "g9/${tool}:latest" --format '{{.Id}}')"
+  echo "g9/${tool}@${digest}" | tee -a deploy/pinned/images.digests
+done
+
+echo
 echo "Digests recorded in deploy/pinned/images.digests — operator reviews and admits these."

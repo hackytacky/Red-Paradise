@@ -7,7 +7,7 @@ from .web_scanners import AdapterArgError, _flag
 
 GOWITNESS_IMAGE = "lepidge/gowitness:latest"  # pinned at admission
 AMASS_IMAGE = "cazzzer/amass:latest"
-DNSRECON_IMAGE = "dnsrecon:latest"  # pinned at admission
+DNSRECON_IMAGE = "g9/dnsrecon:latest"  # locally built — deploy/images/dnsrecon  # pinned at admission
 
 GOWITNESS_ALLOWED = {"--screenshot-path", "--threads", "--timeout", "--no-banner", "scan"}
 AMASS_ALLOWED = {"-passive", "-silent", "-timeout"}
