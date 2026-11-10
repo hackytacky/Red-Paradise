@@ -20,16 +20,16 @@ from ..executor.container_runtime import ContainerCommand, build_command
 from .web_scanners import AdapterArgError, _flag
 
 ZAP_IMAGE = "ghcr.io/zaproxy/zaproxy:latest"
-CAIDO_IMAGE = "caido/caido:latest"
+CAIDO_IMAGE = "g9/caido:latest"  # locally built — deploy/images/caido
 GRYPE_IMAGE = "anchore/grype:latest"
 SYFT_IMAGE = "anchore/syft:latest"
 TRIVY_IMAGE = "aquasec/trivy:latest"
 LDAPSEARCH_IMAGE = "bitnami/openldap:latest"
-WINDAPSEARCH_IMAGE = "windapsearch:latest"
-BLOODHOUND_IMAGE = "bloodhound/bloodhound:latest"
-SHARPHOUND_IMAGE = "sharphound:latest"
-AZUREHOUND_IMAGE = "azurehound:latest"
-PYRIT_IMAGE = "pyrit/pyrit:latest"
+WINDAPSEARCH_IMAGE = "g9/windapsearch:latest"  # locally built — deploy/images/windapsearch
+BLOODHOUND_IMAGE = None  # analysis platform, not a collector — see dispatch_bloodhound
+SHARPHOUND_IMAGE = None  # Windows .NET collector — cannot run in a Linux container
+AZUREHOUND_IMAGE = "g9/azurehound:latest"  # locally built — deploy/images/azurehound
+PYRIT_IMAGE = "g9/pyrit:latest"  # locally built — deploy/images/pyrit
 
 ZAP_ALLOWED = {"-cmd", "-quickurl", "-quickout"}
 CAIDO_ALLOWED = {"--headless"}
@@ -137,12 +137,11 @@ def dispatch_windapsearch(spec: dict) -> ContainerCommand:
 
 
 def build_bloodhound_argv(spec: dict) -> list[str]:
-    args = spec.get("normalized_arguments", {})
-    collector = args.get("collector", "BloodHound")
-    if collector != "BloodHound":
-        raise AdapterArgError(f"bloodhound adapter collects with BloodHound only, got {collector!r}")
-    tokens = _flags(args, BH_ALLOWED, "bloodhound", {"-c", "--collection"})
-    return ["--collection", "Default", *tokens] if "--collection" in tokens else ["--collection", "Default", *tokens]
+    raise AdapterArgError(
+        "BloodHound is the ANALYSIS platform (Electron + Neo4j), not a collector — "
+        "collection routes to the SharpHound (Windows worker) or AzureHound ingestors; "
+        "analysis runs as the operator-admitted BloodHound CE instance"
+    )
 
 
 def dispatch_bloodhound(spec: dict) -> ContainerCommand:
@@ -150,12 +149,10 @@ def dispatch_bloodhound(spec: dict) -> ContainerCommand:
 
 
 def build_sharphound_argv(spec: dict) -> list[str]:
-    args = spec.get("normalized_arguments", {})
-    collector = args.get("collector", "SharpHound")
-    if collector != "SharpHound":
-        raise AdapterArgError(f"sharphound adapter collects with SharpHound only, got {collector!r}")
-    tokens = _flags(args, BH_ALLOWED, "sharphound", {"-c", "--collection"})
-    return ["--collection", "Default", *tokens] if "--collection" in tokens else ["--collection", "Default", *tokens]
+    raise AdapterArgError(
+        "SharpHound is a Windows .NET collector — it cannot run in a Linux container; "
+        "route to the Windows/KVM worker at Stage 02, or collect with AzureHound for Azure"
+    )
 
 
 def dispatch_sharphound(spec: dict) -> ContainerCommand:

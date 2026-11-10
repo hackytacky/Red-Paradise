@@ -61,13 +61,16 @@ class TestWave4Adapters:
         argv = build_windapsearch_argv(spec)
         assert "--dc-ip" in argv and "lab-dc-01.g9.local" in argv
 
-    def test_identity_collectors_enforce_collector_field(self):
-        from g9_backend.tools.wave4_adapters import build_sharphound_argv
-        spec = make_action_spec({**SPEC, "tool_id": "bloodhound", "normalized_arguments": {"collector": "BloodHound", "targets": ["lab-dc-01.g9.local"]}})
-        assert "--collection" in build_bloodhound_argv(spec)
-        wrong = make_action_spec({**SPEC, "tool_id": "sharphound", "normalized_arguments": {"collector": "Mimikatz", "targets": ["x"]}})
-        with pytest.raises(Exception, match="SharpHound only"):
-            build_sharphound_argv(wrong)
+    def test_identity_collectors_route_honestly(self):
+        """BloodHound is analysis (not a collector); SharpHound is a
+        Windows .NET collector that cannot run in a Linux container —
+        both adapters refuse with precise routing errors instead of
+        pretending to execute."""
+        from g9_backend.tools.wave4_adapters import build_bloodhound_argv, build_sharphound_argv
+        with pytest.raises(Exception, match="ANALYSIS platform"):
+            build_bloodhound_argv({})
+        with pytest.raises(Exception, match="Windows .NET collector"):
+            build_sharphound_argv({})
 
     def test_azurehound_requires_tenant(self):
         spec = make_action_spec({**SPEC, "tool_id": "azurehound", "normalized_arguments": {"collector": "AzureHound", "targets": ["t"]}})
@@ -90,3 +93,32 @@ class TestWave4Adapters:
     def test_hardened_profile(self):
         s = ADAPTERS["owasp-zap"](make_action_spec(SPEC)).shell()
         assert "--cap-drop ALL" in s and "no-new-privileges" in s and "--read-only" in s
+
+class TestIntelX:
+    def test_intelx_query_scoped(self):
+        from g9_backend.tools.feed_adapters import build_intelx_argv, dispatch_intelx
+        spec = make_action_spec({**SPEC, "tool_id": "intelx", "normalized_arguments": {"bucket": "phonebook"}})
+        argv = build_intelx_argv(spec)
+        assert argv == ["intelx", "query", "phonebook", "lab-api.g9.local"]
+        full = dispatch_intelx(spec).argv
+        assert "-e" in full and "INTELX_API_KEY" in full
+
+    def test_intelx_bucket_allowlist(self):
+        from g9_backend.tools.feed_adapters import build_intelx_argv
+        spec = make_action_spec({**SPEC, "tool_id": "intelx", "normalized_arguments": {"bucket": "stealer-logs"}})
+        with pytest.raises(Exception, match="scoped allowlist"):
+            build_intelx_argv(spec)
+
+    def test_intelx_in_chain(self):
+        from g9_backend.executor.invoke_chain import ADAPTERS
+        assert "intelx" in ADAPTERS
+
+    def test_bloodhound_routes_honestly(self):
+        from g9_backend.tools.wave4_adapters import build_bloodhound_argv
+        with pytest.raises(Exception, match="ANALYSIS platform"):
+            build_bloodhound_argv({})
+
+    def test_sharphound_routes_honestly(self):
+        from g9_backend.tools.wave4_adapters import build_sharphound_argv
+        with pytest.raises(Exception, match="Windows .NET collector"):
+            build_sharphound_argv({})

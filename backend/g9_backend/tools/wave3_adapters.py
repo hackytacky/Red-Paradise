@@ -24,19 +24,19 @@ from .web_scanners import AdapterArgError, _flag, _targets
 
 SHERLOCK_IMAGE = "sherlock/sherlock:latest"
 MAIGRET_IMAGE = "soxoj/maigret:latest"
-HOLEHE_IMAGE = "holehe/holehe:latest"
-GHUNT_IMAGE = "mxrch/ghunt:latest"
+HOLEHE_IMAGE = "g9/holehe:latest"  # locally built — deploy/images/holehe
+GHUNT_IMAGE = "g9/ghunt:latest"  # locally built — deploy/images/ghunt
 TRUFFLEHOG_IMAGE = "trufflesecurity/trufflehog:latest"
 GOBUSTER_IMAGE = "gobuster/gobuster:latest"
 FEROXBUSTER_IMAGE = "epi052/feroxbuster:latest"
-SUBLIST3R_IMAGE = "aboul3la/sublist3r:latest"
-WHATWEB_IMAGE = "whatweb:latest"
-EXIFTOOL_IMAGE = "exiftool/exiftool:latest"
-HACHOIR_IMAGE = "hachoir/hachoir:latest"
+SUBLIST3R_IMAGE = "hypnza/sublist3r:latest"  # verified on Docker Hub
+WHATWEB_IMAGE = "g9/whatweb:latest"  # locally built — deploy/images/whatweb
+EXIFTOOL_IMAGE = "g9/exiftool:latest"  # locally built — deploy/images/exiftool
+HACHOIR_IMAGE = "g9/hachoir:latest"  # locally built — deploy/images/hachoir
 DNTWIST_IMAGE = "elceef/dnstwist:latest"
-HAKRAWLER_IMAGE = "hakluke/hakrawler:latest"
-PROMPTFOO_IMAGE = "promptfoo/promptfoo:latest"
-GARAK_IMAGE = "garak/garak:latest"
+HAKRAWLER_IMAGE = "g9/hakrawler:latest"  # locally built — deploy/images/hakrawler
+PROMPTFOO_IMAGE = "g9/promptfoo:latest"  # locally built — deploy/images/promptfoo
+GARAK_IMAGE = "g9/garak:latest"  # locally built — deploy/images/garak
 
 SHERLOCK_ALLOWED = {"--timeout", "--nsfw"}
 MAIGRET_ALLOWED = {"--all", "--no-color", "--timeout"}

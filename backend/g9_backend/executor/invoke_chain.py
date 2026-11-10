@@ -24,7 +24,7 @@ from ..tools.web_scanners import dispatch_httpx, dispatch_ffuf, dispatch_nuclei
 from ..tools.recon_tools import dispatch_subfinder, dispatch_masscan, dispatch_testssl
 from ..tools.osint_secret_tools import dispatch_theharvester, dispatch_gitleaks, dispatch_dig
 from ..tools.gowitness_amass_dnsrecon import dispatch_gowitness, dispatch_amass, dispatch_dnsrecon
-from ..tools.feed_adapters import dispatch_shodan, dispatch_censys, dispatch_abusech, dispatch_otx
+from ..tools.feed_adapters import dispatch_shodan, dispatch_censys, dispatch_abusech, dispatch_otx, dispatch_intelx
 from ..tools.wave4_adapters import (
     dispatch_owasp_zap, dispatch_caido, dispatch_grype_syft, dispatch_trivy,
     dispatch_ldapsearch, dispatch_windapsearch, dispatch_bloodhound,
@@ -55,6 +55,7 @@ ADAPTERS: dict = {
     "censys": dispatch_censys,
     "abusech": dispatch_abusech,
     "otx": dispatch_otx,
+    "intelx": dispatch_intelx,
     "sherlock": dispatch_sherlock, "maigret": dispatch_maigret,
     "holehe": dispatch_holehe, "ghunt": dispatch_ghunt, "trufflehog": dispatch_trufflehog,
     "gobuster": dispatch_gobuster, "feroxbuster": dispatch_feroxbuster,

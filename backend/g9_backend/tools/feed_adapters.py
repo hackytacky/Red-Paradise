@@ -25,6 +25,7 @@ FEED_CLIENT_IMAGE = "g9/feed-client:latest"  # built and pinned at admission on 
 SHODAN_ENV = "SHODAN_API_KEY"
 CENSYS_ENV = ["CENSYS_API_ID", "CENSYS_API_SECRET"]
 OTX_ENV = "OTX_API_KEY"
+INTELX_ENV = "INTELX_API_KEY"  # legal-gated source: legal review on record at admission
 
 ABUSECH_FEEDS = {"urlhaus", "threatfox", "malwarebazaar", "feodo", "sslbl", "yaraify"}
 ABUSECH_FEED_ALIASES = {  # intel/sources.py registry ids → adapter feed names
@@ -99,6 +100,20 @@ def build_abusech_argv(spec: dict) -> list[str]:
 
 def dispatch_abusech(spec: dict) -> ContainerCommand:
     return build_command(spec, FEED_CLIENT_IMAGE, build_abusech_argv(spec))
+
+
+def build_intelx_argv(spec: dict) -> list[str]:
+    args = spec.get("normalized_arguments", {})
+    if (args.get("flags") or "").split():
+        raise AdapterArgError("intelx: flags are not permitted on intelligence queries")
+    bucket = args.get("bucket")
+    if bucket not in {"phonebook", "emailaddress", "ip", "url", "domain", "hash", "filename", "macaddress", "uuid", "pastebin"}:
+        raise AdapterArgError(f"intelx: bucket {bucket!r} is not in the scoped allowlist")
+    return ["intelx", "query", bucket, _single_target(spec, "intelx")]
+
+
+def dispatch_intelx(spec: dict) -> ContainerCommand:
+    return build_command(spec, FEED_CLIENT_IMAGE, build_intelx_argv(spec), env_var_names=[INTELX_ENV])
 
 
 def build_otx_argv(spec: dict) -> list[str]:
