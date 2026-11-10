@@ -5,9 +5,9 @@ from __future__ import annotations
 from ..executor.container_runtime import ContainerCommand, build_command
 from .web_scanners import AdapterArgError, _flag
 
-THEHARVESTER_IMAGE = "vanhausertheharvester/theharvester:latest"  # pinned at admission
+THEHARVESTER_IMAGE = "g9/theharvester:latest"  # locally built from upstream — deploy/images/theharvester
 GITLEAKS_IMAGE = "zricethezav/gitleaks:latest"
-DIG_IMAGE = "ubuntu/dig:latest"  # pinned at admission
+DIG_IMAGE = "g9/dig:latest"  # locally built — deploy/images/dig
 
 THEHARVESTER_ALLOWED = {"-b", "-l", "-f", "-s"}
 GITLEAKS_ALLOWED = {"--no-banner", "--redact", "--report-format", "--report-path", "--exit-code"}

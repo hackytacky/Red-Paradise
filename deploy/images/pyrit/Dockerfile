@@ -1,10 +1,9 @@
-# pyrit — legacy WPA/WPA2 audit tool; locally built from vendored source.
+# pyrit — legacy WPA/WPA2 audit tool, built from upstream at the admitted rev.
 # NOTE: upstream is unmaintained (last release 2014) — admission review
 # must accept the maintenance posture before qualification.
-# The operator clones https://github.com/JPaulMora/pyrit.git at the
-# admitted revision into this directory before building.
 FROM python:3.12-slim
-COPY pyrit /opt/pyrit
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential libssl-dev zlib1g-dev libpcap-dev && \
+ARG PYRIT_REV=master
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential libssl-dev zlib1g-dev libpcap-dev git && \
+    git clone --depth 1 --branch ${PYRIT_REV} https://github.com/JPaulMora/pyrit.git /opt/pyrit && \
     cd /opt/pyrit && python setup.py build && python setup.py install
 ENTRYPOINT ["pyrit"]

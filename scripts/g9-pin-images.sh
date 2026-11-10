@@ -10,31 +10,34 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Remote names verified live on the G9 host (2026-06): the eight that
+# failed to pull were moved to LOCAL_IMAGES below and are built from
+# upstream source instead.
 REMOTE_IMAGES=(
   "projectdiscovery/nuclei"
   "projectdiscovery/subfinder"
-  "secureideas/httpx"
-  "ffuf/ffuf"
-  "mnbf9r3cr01/masscan"
   "drwetter/testssl.sh"
-  "vanhausertheharvester/theharvester"
   "zricethezav/gitleaks"
-  "ubuntu/dig"
   "anchore/grype"
   "aquasec/trivy"
   "ghcr.io/zaproxy/zaproxy"
   "hypnza/sublist3r"
-  "cazzzer/amass"
-  "lepidge/gowitness"
   "trufflesecurity/trufflehog"
   "sherlock/sherlock"
   "soxoj/maigret"
   "elceef/dnstwist"
-  "gobuster/gobuster"
   "epi052/feroxbuster"
 )
 
 LOCAL_IMAGES=(
+  "httpx"
+  "ffuf"
+  "masscan"
+  "theharvester"
+  "dig"
+  "amass"
+  "gowitness"
+  "gobuster"
   "whatweb"
   "windapsearch"
   "dnsrecon"

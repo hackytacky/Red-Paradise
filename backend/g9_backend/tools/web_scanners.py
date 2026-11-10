@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from ..executor.container_runtime import ContainerCommand, build_command
 
-HTTPX_IMAGE = "secureideas/httpx:latest"  # pinned at admission on the G9 host
-FFUF_IMAGE = "ffuf/ffuf:latest"
+HTTPX_IMAGE = "g9/httpx:latest"  # locally built from upstream — deploy/images/httpx
+FFUF_IMAGE = "g9/ffuf:latest"  # locally built from upstream — deploy/images/ffuf
 NUCLEI_IMAGE = "projectdiscovery/nuclei:latest"
 
 

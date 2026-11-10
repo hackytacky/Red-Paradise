@@ -12,7 +12,7 @@ from ..executor.container_runtime import ContainerCommand, build_command
 from .web_scanners import AdapterArgError, _flag
 
 SUBFINDER_IMAGE = "projectdiscovery/subfinder:latest"
-MASSCAN_IMAGE = "mnbf9r3cr01/masscan:latest"  # pinned at admission on the G9 host
+MASSCAN_IMAGE = "g9/masscan:latest"  # locally built from upstream — deploy/images/masscan
 TESTSSL_IMAGE = "drwetter/testssl.sh:latest"
 
 SUBFINDER_ALLOWED = {"-silent", "-all", "-timeout"}

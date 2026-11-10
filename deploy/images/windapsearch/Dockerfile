@@ -1,4 +1,5 @@
-# windapsearch — locally built, pinned at admission
+# windapsearch — locally built (no official upstream image).
+# Unpinned pip: the digest pin at admission records the exact build.
 FROM python:3.12-slim
-RUN pip install --no-cache-dir windapsearch==2.4.1
+RUN pip install --no-cache-dir windapsearch
 ENTRYPOINT ["windapsearch"]

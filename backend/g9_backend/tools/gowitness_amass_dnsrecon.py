@@ -5,8 +5,8 @@ from __future__ import annotations
 from ..executor.container_runtime import ContainerCommand, build_command
 from .web_scanners import AdapterArgError, _flag
 
-GOWITNESS_IMAGE = "lepidge/gowitness:latest"  # pinned at admission
-AMASS_IMAGE = "cazzzer/amass:latest"
+GOWITNESS_IMAGE = "g9/gowitness:latest"  # locally built from upstream — deploy/images/gowitness
+AMASS_IMAGE = "g9/amass:latest"  # locally built from upstream — deploy/images/amass
 DNSRECON_IMAGE = "g9/dnsrecon:latest"  # locally built — deploy/images/dnsrecon  # pinned at admission
 
 GOWITNESS_ALLOWED = {"--screenshot-path", "--threads", "--timeout", "--no-banner", "scan"}

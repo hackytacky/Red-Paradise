@@ -1,11 +1,10 @@
-# GHunt — locally built from the upstream repo, rev pinned at admission.
+# GHunt — built from the upstream repo at the admitted revision.
 # Operator Google auth is injected at RUNTIME via the GHUNT_COOKIES
 # environment variable (env-NAME-only in the command line, never a value).
-# The operator clones https://github.com/mxrch/GHunt.git at the admitted
-# revision into this directory before building (vendor the source; the
-# image build is offline after that).
 FROM python:3.12-slim
-COPY GHunt /opt/ghunt
-RUN cd /opt/ghunt && pip install --no-cache-dir -r requirements.txt
+ARG GHUNT_REV=master
+RUN apt-get update && apt-get install -y --no-install-recommends git && \
+    git clone --depth 1 --branch ${GHUNT_REV} https://github.com/mxrch/GHunt.git /opt/ghunt && \
+    cd /opt/ghunt && pip install --no-cache-dir -r requirements.txt
 WORKDIR /opt/ghunt
 ENTRYPOINT ["python", "ghunt.py"]

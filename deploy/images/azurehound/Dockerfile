@@ -1,9 +1,9 @@
-# AzureHound — Go collector built from vendored upstream source, rev pinned.
-# The operator clones https://github.com/BloodHoundAD/AzureHound.git at the
-# admitted revision into this directory before building.
+# AzureHound — Go collector built from upstream at the admitted rev
 FROM golang:1.24-alpine AS build
-COPY AzureHound /src
-RUN cd /src && go build -o /azurehound .
+ARG AZUREHOUND_REV=master
+RUN apk add --no-cache git && \
+    git clone --depth 1 --branch ${AZUREHOUND_REV} https://github.com/BloodHoundAD/AzureHound.git /src && \
+    cd /src && go build -o /azurehound .
 FROM alpine:3.20
 COPY --from=build /azurehound /usr/local/bin/azurehound
 ENTRYPOINT ["azurehound"]
