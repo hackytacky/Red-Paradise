@@ -24,7 +24,14 @@ groupadd -f docker
 usermod -aG docker "${SUDO_USER:-$USER}"
 
 echo "== [3/5] KVM + libvirt =="
-apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virtinst cpu-checker
+# qemu-kvm is a real package on 22.04/24.04 but a virtual package on
+# 26.04+ — fall back to qemu-system-x86 when apt has no candidate.
+if apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virtinst cpu-checker; then
+  :
+else
+  echo "qemu-kvm unavailable (virtual package) — installing qemu-system-x86 instead"
+  apt-get install -y qemu-system-x86 libvirt-daemon-system libvirt-clients bridge-utils virtinst cpu-checker
+fi
 systemctl enable --now libvirtd
 
 echo "== [4/5] KVM hardware check =="
