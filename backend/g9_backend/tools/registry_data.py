@@ -76,6 +76,58 @@ OSINT_TOOLS = [
     ("hackingtool", "hackingtool (z4nzu)", "tool-wrapper", C, "MIT", [UNVERIFIED], "wrapper — every wrapped tool admits separately"),
 ]
 
+# Operator intake expansion (build request): installable OSINT tools
+# from the operator's supplied list. Same admission gates as the rest
+# of the registry; licenses marked "open-source" need verification at
+# admission before qualification.
+INTAKE_TOOLS = [
+    ("exiftool", "ExifTool", "metadata-forensics", C, "GPL-1.0+", [], "read/strip EXIF/metadata"),
+    ("hachoir", "hachoir", "metadata-forensics", C, "GPL-2.0", [], "binary metadata parsing"),
+    ("mutagen", "mutagen", "metadata-forensics", C, "GPL-2.0", [], "audio metadata"),
+    ("goris", "goris", "metadata-forensics", C, "MIT", [], "Google reverse image search CLI"),
+    ("lemeknow", "lemeknow", "file-identification", C, "MIT", [], "file magic identification"),
+    ("dnstwist", "dnstwist", "domain-intel", C, "Apache-2.0", [], "typosquat/domain permutation"),
+    ("opensquat", "openSquat", "domain-intel", C, "GPL-3.0", [], "domain squatting/phishing monitoring"),
+    ("cloakquest3r", "CloakQuest3r", "domain-intel", C, "MIT", [], "real-IP discovery behind CDN/Cloudflare"),
+    ("miteru", "miteru", "phishing-intel", C, "MIT", [], "phishing kit discovery"),
+    ("hakrawler", "hakrawler", "web-crawl", C, "MIT", [], "JS/endpoint discovery — in-scope targets only"),
+    ("cloudscraper-potti", "CloudScraper (jordanpotti)", "cloud-enum", C, "MIT", [], "cloud asset enumeration from TLDs"),
+    ("thescrapper", "TheScrapper", "web-scrape", C, "MIT", [], "email/phone/social scraping — ToS review at admission"),
+    ("github-search-gwen001", "github-search (gwen001)", "code-search", C, "MIT", [], "GitHub OSINT queries"),
+    ("h8mail", "h8mail", "osint-email", C, "MIT", [LEGAL_GATE], "breach-source queries — per RoE and law"),
+    ("mailmeta", "mailMeta", "osint-email", C, "MIT", [], "email metadata parsing"),
+    ("chiasmodon", "chiasmodon", "osint-email", C, "MIT", [LEGAL_GATE], "email/domain attribution via multiple sources — ToS review"),
+    ("nexfil", "nexfil", "osint-username", C, "MIT", [], "username profiling across platforms"),
+    ("marple", "marple", "osint-username", C, "MIT", [], "username search by geolocation/time"),
+    ("aliens-eye", "Aliens_eye", "osint-username", C, "open-source", [], "username enumeration"),
+    ("snoop", "snoop", "osint-username", C, "open-source", [LEGAL_GATE], "searches included leak databases — per RoE and law"),
+    ("pyosint", "Pyosint", "osint-username", C, "open-source", [], "username search"),
+    ("blackbird", "blackbird", "osint-username", C, "MIT", [], "username/account discovery"),
+    ("phonenumber-osint", "PhoneNumber-OSINT", "osint-phone", C, "MIT", [LEGAL_GATE], "phone lookup APIs — ToS review at admission"),
+    ("clearfront", "clearfront", "osint-people", C, "MIT", [], "people search aggregation"),
+    ("daprofiler", "DaProfiler", "osint-people", C, "GPL-3.0", [], "profile aggregation"),
+    ("rug", "rug", "osint-people", C, "MIT", [], "person lookup via breach/phone APIs"),
+    ("leaky", "LEAKEY", "osint-people", C, "MIT", [LEGAL_GATE], "email/username via breach APIs — per RoE and law"),
+    ("thedevilseye", "thedevilseye", "darkweb-osint", C, "MIT", [], "onion service enumeration — monitor-only posture per dark-web governance"),
+    ("thelordseye", "thelordseye", "darkweb-osint", C, "MIT", [], "onion service enumeration — monitor-only posture per dark-web governance"),
+    ("occli", "occli", "osint-people", C, "MIT", [], "people search CLI"),
+    ("grep-for-osint", "grep_for_osint", "code-search", C, "MIT", [], "grep query collections"),
+    ("credit-osint", "Credit-OSINT", "financial-osint", C, "open-source", [LEGAL_GATE], "card/BIN info tooling — legal review at admission; QA/test use only"),
+    ("scrummage", "Scrummage", "osint-framework", C, "GPL-3.0", [], "framework — every module admits separately"),
+    ("gomapenum", "GoMapEnum", "osint-enum", C, "open-source", [], "user/account enumeration"),
+    ("reconspider", "reconspider", "osint-framework", C, "open-source", [UNVERIFIED], "framework — manual review + per-module admission"),
+    ("semid", "SEMID", "osint-email", C, "open-source", [], "email enumeration"),
+    ("maryam", "Maryam", "osint-framework", C, "open-source", [], "framework — per-module admission"),
+    ("osint-toolkit", "OSINT Toolkit (dev-lu)", "osint-framework", C, "open-source", [], "web toolkit — self-hosted"),
+    ("cronodump", "cronodump", "data-export", C, "MIT", [], "Aleph export tooling"),
+    ("obsidian-cli", "obsidian-cli", "notekeeping", C, "MIT", [], "investigation notekeeping"),
+    ("orion-araekiel", "Orion (Araekiel)", "osint-framework", C, "MIT", [], "query framework"),
+    ("sourcebot", "SourceBot", "code-search", C, "AGPL-3.0", [], "self-hosted code search"),
+    ("ton-of-privacy", "a_TON_of_privacy", "privacy-tradecraft", C, "MIT", [], "privacy/anonymity tradecraft collection"),
+    ("cyberchef-tool", "CyberChef", "data-analysis", C, "Apache-2.0", [], "data format analysis"),
+    ("tldr-pages-tool", "tldr pages (client)", "reference", C, "MIT", [], "command reference"),
+]
+
 SECRET_SCANNING = [
     ("gitleaks", "gitleaks", "secret-scanning", C, "MIT", [], ""),
     ("trufflehog", "trufflehog", "secret-scanning", C, "AGPL-3.0", [LICENSE_REQUIRED], "AGPL gate for commercial integration"),
@@ -481,7 +533,7 @@ WAVE2_GROUPS = [C2_FRAMEWORKS_W2, POST_EXPLOIT_AD, TUNNELING_INFRA, SOCIAL_ENGIN
 
 
 def all_entries():
-    groups = [CONTAINER_RECON, OSINT_TOOLS, SECRET_SCANNING, DEFENSE_TELEMETRY,
+    groups = [CONTAINER_RECON, OSINT_TOOLS, INTAKE_TOOLS, SECRET_SCANNING, DEFENSE_TELEMETRY,
               KVM_HOSTILE, C2_COMMERCIAL, KNOWLEDGE_BASES, CTI_SOURCES, PLATFORMS,
               AI_RED_TEAM, G9_FAMILY, INTEL_SOURCES_WEB, UNVERIFIED_SOURCES,
               *WAVE2_GROUPS]
