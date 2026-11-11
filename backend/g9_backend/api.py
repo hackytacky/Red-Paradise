@@ -135,10 +135,14 @@ _live_cursor = {"idx": 0}
 
 
 @app.post("/lab/run/live")
-def lab_run_live(mode: str = "autonomous"):
+def lab_run_live(mode: str = "autonomous", planner: str = "rulebook"):
     """Kick off a live mission in the background — the Mission Console
     UI polls /lab/events to watch every decision, gate, execution and
-    verification step as it happens."""
+    verification step as it happens.
+
+    planner: rulebook (deterministic reference) | llm (the local model
+    at G9_LLM_ENDPOINT proposes typed actions; every gate still
+    applies — the model proposes, the code disposes)."""
     import threading
     prev = _lab_state.get("live")
     if prev is not None and prev.get("mission") is not None:
@@ -151,7 +155,12 @@ def lab_run_live(mode: str = "autonomous"):
 
     def _run():
         try:
-            _lab_state["report"] = mission.run()
+            if planner == "llm":
+                from .agent import Agent, LLMPlanner, AgentError
+                _lab_state["report"] = Agent(mission, LLMPlanner()).run()
+            else:
+                from .agent import Agent, RulebookPlanner
+                _lab_state["report"] = Agent(mission, RulebookPlanner()).run()
         except Exception as e:  # surface honestly, never silently
             _lab_state["live"]["error"] = str(e)
         finally:

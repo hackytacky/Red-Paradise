@@ -27,7 +27,7 @@ export const g9api = {
   labReport: () => call("/lab/report"),
   labArsenal: () => call("/lab/arsenal"),
   labPending: () => call("/lab/pending"),
-  startLabLive: (mode = "autonomous") => call(`/lab/run/live?mode=${mode}`, { method: "POST" }),
+  startLabLive: (mode = "autonomous", planner = "rulebook") => call(`/lab/run/live?mode=${mode}&planner=${planner}`, { method: "POST" }),
   labEvents: (since = 0) => call(`/lab/events?since=${since}`),
   labApprove: (actionId) => call(`/lab/approve?action_id=${encodeURIComponent(actionId)}`, { method: "POST" }),
   labMode: (mode) => call(`/lab/mode?mode=${mode}`, { method: "POST" }),
