@@ -1,5 +1,4 @@
-# windapsearch — locally built (no official upstream image).
-# Unpinned pip: the digest pin at admission records the exact build.
-FROM python:3.12-slim
+# windapsearch — python:3.11 (its dependency pins predate 3.12)
+FROM python:3.11-slim
 RUN pip install --no-cache-dir windapsearch
 ENTRYPOINT ["windapsearch"]

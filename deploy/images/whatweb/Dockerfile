@@ -1,5 +1,5 @@
-# whatweb — locally built (no official upstream image).
-# Unpinned gem: the digest pin at admission records the exact build.
-FROM ruby:3.2-slim
+# whatweb — locally built (no official upstream image); ruby 3.4 for
+# current gem requirements. Digest pin records the exact build.
+FROM ruby:3.4-slim
 RUN gem install whatweb --no-document
 ENTRYPOINT ["whatweb"]
