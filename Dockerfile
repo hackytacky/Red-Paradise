@@ -2,7 +2,9 @@
 FROM node:20-slim AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+# --network=host: the registry fetch uses the host's working resolver
+# directly (the daemon's embedded DNS can fail on systemd-resolved hosts).
+RUN --network=host npm ci
 COPY . .
 RUN npm run build
 
