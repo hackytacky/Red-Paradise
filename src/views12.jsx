@@ -167,6 +167,7 @@ export function RealEngagementView() {
   const [scope, setScope] = useState("target1.authorized-domain.com");
   const [grants, setGrants] = useState("nmap-scoped, httpx, testssl, nuclei");
   const [roe, setRoe] = useState(false);
+  const [briefText, setBriefText] = useState("");
   const [mode, setMode] = useState("hitl");
   const [planner, setPlanner] = useState("rulebook");
   const [execute, setExecute] = useState(true);
@@ -204,12 +205,21 @@ export function RealEngagementView() {
   async function launch() {
     setEvents([]); setDone(false); setReport(null); setError(""); setNotice("");
     cursor.current = 0;
+    let brief = {};
+    if (briefText.trim()) {
+      try {
+        brief = JSON.parse(briefText.trim());
+      } catch {
+        brief = { notes: briefText.trim() };  // free-form text is valid intel
+      }
+    }
     const created = await g9api.engagementCreate({
       engagement_id: eid.trim(),
       scope: scope.split(",").map((s) => s.trim()).filter(Boolean),
       roe_signed: roe,
       principals: ["agent:chimera"],
       grants: grants.split(",").map((s) => s.trim()).filter(Boolean),
+      brief,
     });
     if (!created.ok) { setError(created.reason || "failed to create engagement"); return; }
     const r = await g9api.realMissionLive(eid.trim(), mode, planner, execute);
@@ -256,6 +266,22 @@ export function RealEngagementView() {
               EXECUTE FOR REAL (Docker)
             </label>
           </div>
+          <label className="md:col-span-2 text-[11px] text-slate-400 font-bold uppercase tracking-wider space-y-1">
+            target brief — everything you already know (JSON or plain text)
+            <textarea value={briefText} onChange={(e) => setBriefText(e.target.value)} disabled={running} rows={6}
+              placeholder={`e.g.
+{
+  "architecture": "Windows AD behind Cloudflare",
+  "known_hosts": ["dc01.corp.example", "vpn.example"],
+  "urls": ["https://app.example.com/login"],
+  "tech": ["Apache 2.4", "Tomcat 9", "MSSQL"],
+  "creds_env": "G9_AD_CREDS",
+  "prior_findings": "SMB signing disabled on dc01 (prior audit)",
+  "start_here": "the Tomcat manager on :8080 was exposed last engagement"
+}`}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-slate-200 font-mono normal-case" />
+            <span className="text-[10px] font-normal normal-case text-slate-500">the planner reads this as trusted context — where to start, known hosts, URLs, tech stack, creds env names, prior findings. It grants no scope, tools, or permissions.</span>
+          </label>
         </div>
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <div className="flex items-center gap-1 text-[11px]">

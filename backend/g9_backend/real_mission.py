@@ -208,6 +208,7 @@ class RealMission:
             raise RealMissionError("an engagement requires a non-empty authorized scope")
         self.engagement_id = engagement["engagement_id"]
         self.scope = list(scope)
+        self.brief = dict(engagement.get("brief") or {})
         self.principal = principal
         self.execute = execute
         self.autonomy = AutonomyController(mode=mode, engagement_id=self.engagement_id)
@@ -242,6 +243,9 @@ class RealMission:
         return {
             "allowed_tools": set(self.engine.grants[self.engagement_id]["tools"]) & set(ADAPTERS),
             "targets": {f"target-{i}": t for i, t in enumerate(self.scope)},
+            # the operator's brief is trusted CONTEXT - it tells the planner
+            # where to start; it never widens scope, tools, or permissions
+            "brief": self.brief,
             "findings": [
                 {"template": n["provenance"].get("template"), "status": n["validation_status"]}
                 for n in self.graph.nodes.values() if n["klass"] == "finding"

@@ -174,3 +174,71 @@ def test_planner_state_only_grants_admitted_tools():
     state = m.planner_state(0, 10)
     assert state["allowed_tools"] == {"httpx"}
     assert set(state["targets"].values()) == {"target1.authorized-lab.example"}
+
+
+# ------------------------------------------------- operator target brief
+
+def test_brief_flows_to_planner_state():
+    eng = {**ENG, "brief": {
+        "architecture": "Windows AD",
+        "start_here": "Tomcat manager on :8080",
+        "creds_env": "G9_AD_CREDS",
+    }}
+    m = RealMission(engagement=eng, mode="autonomous", execute=False)
+    state = m.planner_state(0, 10)
+    assert state["brief"]["start_here"] == "Tomcat manager on :8080"
+    # the brief is context only - it never widens tools or targets
+    assert state["allowed_tools"] <= set(ENG["grants"]) & {"nmap-scoped", "httpx", "testssl", "nuclei"}
+    assert set(state["targets"].values()) == {"target1.authorized-lab.example"}
+
+
+def test_brief_grants_nothing():
+    eng = {**ENG, "brief": {"targets": ["evil.example"], "tools": ["sqlmap"]}}
+    m = RealMission(engagement=eng, mode="autonomous", execute=False)
+    r = m._invoke("sqlmap", "target1.authorized-lab.example")
+    assert r["ok"] is False and r["blocked_at"] == "policy"  # ungranted stays ungranted
+    r2 = m._invoke("nmap-scoped", "evil.example")
+    assert r2["ok"] is False and r2["blocked_at"] == "policy"  # brief targets aren't scope
+
+
+def test_api_stores_brief():
+    r = client.post("/engagements/create", json={
+        "engagement_id": "ENG-BRIEF-1",
+        "scope": ["brief.example"],
+        "roe_signed": True,
+        "grants": ["httpx"],
+        "brief": {"start_here": "the old /admin path", "tech": ["nginx"]},
+    })
+    assert r.json()["ok"] is True
+    listed = client.get("/engagements").json()["engagements"]
+    rec = [e for e in listed if e["engagement_id"] == "ENG-BRIEF-1"][0]
+    assert rec["brief"]["start_here"] == "the old /admin path"
+
+
+def test_llm_prompt_includes_brief():
+    from g9_backend.agent import LLMPlanner
+    import g9_backend.agent as agent_mod
+    captured = {}
+
+    class FakePlanner(LLMPlanner):
+        def __init__(self):
+            super().__init__.__wrapped__ if False else None
+            self.endpoint = "http://127.0.0.1:9/v1"
+            self.model = "m"
+            self.temperature = 0.0
+            self._auto_bound = "m"
+        def _complete(self, prompt, temperature=None):
+            captured["prompt"] = prompt
+            return '{"tool": "httpx", "target": "t1.example", "args": {}, "reason": "r"}'
+
+    p = FakePlanner()
+    state = {
+        "allowed_tools": {"httpx"},
+        "targets": {"target-0": "t1.example"},
+        "brief": {"start_here": "check the login page first"},
+        "findings": [], "steps": 0, "max_steps": 10,
+    }
+    action = p.decide(state)
+    assert action["tool"] == "httpx"
+    assert "check the login page first" in captured["prompt"]
+    assert "OPERATOR ENGAGEMENT BRIEF" in captured["prompt"]

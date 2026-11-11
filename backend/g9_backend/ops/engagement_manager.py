@@ -23,7 +23,8 @@ class EngagementManager:
         self.engagements: dict[str, dict] = {}
 
     def create(self, *, engagement_id: str, scope: list[str], roe_signed: bool,
-               principals: list[str], grants: set[str], tier: str = "lab") -> dict:
+               principals: list[str], grants: set[str], tier: str = "lab",
+               brief: dict | None = None) -> dict:
         if engagement_id in self.engagements:
             raise EngagementError(f"engagement {engagement_id!r} already exists")
         if not scope:
@@ -36,6 +37,11 @@ class EngagementManager:
             "grants": sorted(grants),
             "tier": tier,
             "status": "active" if roe_signed else "red-locked",
+            # the operator's target brief: everything already known about
+            # the authorized target - architecture, known hosts/URLs, tech
+            # stack, creds env names, prior findings, where to start. The
+            # planner reads it as trusted context; it grants NOTHING.
+            "brief": dict(brief or {}),
         }
         self.engagements[engagement_id] = record
         return record

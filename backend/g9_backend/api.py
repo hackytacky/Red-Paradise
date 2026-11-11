@@ -318,6 +318,11 @@ class EngagementIn(BaseModel):
     roe_signed: bool = False
     principals: list[str] = ["agent:chimera"]
     grants: list[str] = []
+    # everything the operator already knows about the authorized target:
+    # architecture, known hosts/URLs, tech stack, creds env names, prior
+    # findings, priorities. The planner reads it as trusted context - it
+    # grants nothing (scope/tools come only from the fields above).
+    brief: dict = {}
 
 
 @app.post("/engagements/create")
@@ -326,7 +331,7 @@ def engagement_create(req: EngagementIn):
         record = _engagements.create(
             engagement_id=req.engagement_id, scope=req.scope,
             roe_signed=req.roe_signed, principals=req.principals,
-            grants=set(req.grants), tier="real",
+            grants=set(req.grants), tier="real", brief=req.brief,
         )
     except Exception as e:
         return {"ok": False, "reason": str(e)}

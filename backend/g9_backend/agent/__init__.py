@@ -134,6 +134,16 @@ class LLMPlanner(Planner):
             "as strict JSON: {\"tool\": str, \"target\": str, \"args\": {}, \"reason\": str, \"done\": bool}. "
             f"Allowed tools (typed contracts only, raw shell is forbidden): {sorted(state['allowed_tools'])}. "
             f"Authorized targets (the ONLY valid target values): {sorted(set(state['targets'].values()))}. "
+        )
+        brief = state.get("brief") or {}
+        if brief:
+            prompt += (
+                "OPERATOR ENGAGEMENT BRIEF (trusted context from the signed RoE - "
+                "start from what is already known; it grants no additional scope, "
+                "tools, or permissions): "
+                f"{json.dumps(brief)[:4000]}. "
+            )
+        prompt += (
             f"Findings so far: {json.dumps(state['findings'])}. Steps used: {state['steps']}/{state['max_steps']}. "
             "If the mission is complete, return done=true."
         )
