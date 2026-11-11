@@ -7,6 +7,7 @@ Stage-07/08 work.
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .core.audit_ledger import AuditLedger
@@ -18,6 +19,16 @@ from .ops.budget_controller import BudgetController
 from .policy.engine import PolicyEngine
 
 app = FastAPI(title="G9 SPECTRE control plane", version="0.1.0")
+
+# The UI is served from 127.0.0.1:5173 and calls this loopback-only API
+# at 127.0.0.1:8700 - cross-origin from the browser. Allow exactly the
+# loopback UI origins, nothing else; the API still binds loopback only.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Demo engagement state — the real service loads this from the
 # engagement scope manager (Stage 01).
