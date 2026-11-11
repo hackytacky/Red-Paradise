@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from .core.audit_ledger import AuditLedger
 from .executor.broker import ExecutionBroker, KVMWorkerManager
 from .lab import LabMission
+from .ops.engagement_manager import EngagementManager
 from .executor.invoke_chain import invoke_tool
 from .ops.budget_controller import BudgetController
 from .policy.engine import PolicyEngine
@@ -131,7 +132,24 @@ def invoke(req: InvokeRequest):
 # stops the target when the run completes.
 
 _lab_state: dict = {"report": None, "mission": None, "live": None}
+_engagements = EngagementManager()
 _live_cursor = {"idx": 0}
+
+
+@app.post("/engagements/quickstart")
+def engagement_quickstart(mode: str = "autonomous", planner: str = "rulebook"):
+    """ONE CLICK: create the lab-tier engagement (loopback scope, lab RoE
+    pre-signed, all lab tools granted) and launch the live mission.
+    The UI asks the operator YES/NO before this is called."""
+    record = _engagements.quickstart_lab()
+    result = lab_run_live(mode=mode, planner=planner)
+    return {"ok": True, "engagement": record, "launch": result}
+
+
+@app.get("/engagements")
+def engagements_list():
+    """The engagement registry: scope, RoE state, principals, grants."""
+    return {"ok": True, "engagements": _engagements.list()}
 
 
 @app.post("/lab/run/live")

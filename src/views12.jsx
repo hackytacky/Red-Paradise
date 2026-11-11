@@ -48,11 +48,14 @@ export function MissionConsoleView() {
     return () => clearInterval(iv);
   }, [running]);
 
+  const [confirming, setConfirming] = useState(false);
+
   async function start() {
     setEvents([]); setDone(false); setReport(null); setError("");
     cursor.current = 0;
-    const r = await g9api.startLabLive(mode, planner);
-    if (r.ok) setRunning(true); else setError(r.reason || "failed to start");
+    const r = await g9api.quickstart(mode, planner);
+    if (r.ok && r.launch && r.launch.ok) setRunning(true);
+    else setError((r.launch && r.launch.reason) || r.reason || "failed to start");
   }
 
   const counts = events.reduce((a, e) => { a[e.kind] = (a[e.kind] || 0) + 1; return a; }, {});
@@ -79,10 +82,29 @@ export function MissionConsoleView() {
               </button>
             ))}
           </div>
-          <button onClick={start} disabled={running}
+          <button onClick={() => setConfirming(true)} disabled={running}
             className={`px-4 py-2 rounded-lg text-[12px] font-bold ${running ? "bg-slate-700 text-slate-400" : "bg-red-600 hover:bg-red-500 text-white"}`}>
-            {running ? "● MISSION RUNNING — streaming below…" : "▶ START LIVE MISSION"}
+            {running ? "● MISSION RUNNING — streaming below…" : "⚡ QUICK START TEST"}
           </button>
+          {confirming && !running && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+              <div className="max-w-md w-full mx-4 rounded-xl border border-red-500/40 bg-slate-950 p-5 space-y-3">
+                <div className="text-[14px] font-black text-red-300">QUICK START — full autonomous lab test?</div>
+                <div className="text-[11px] text-slate-400 leading-relaxed">
+                  One click creates the lab engagement and runs the whole mission:
+                  loopback lab target · lab RoE pre-signed · all lab tools granted ·
+                  mode <span className="text-cyan-300 font-bold">{mode}</span> · brain{" "}
+                  <span className="text-fuchsia-300 font-bold">{planner === "llm" ? "local LLM" : "rulebook"}</span>.
+                  Every action still passes policy → budget → verification, and the
+                  hash-chained ledger records everything.
+                </div>
+                <div className="flex gap-2 justify-end pt-1">
+                  <button onClick={() => setConfirming(false)} className="px-4 py-2 rounded-lg text-[12px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">NO</button>
+                  <button onClick={() => { setConfirming(false); start(); }} className="px-4 py-2 rounded-lg text-[12px] font-bold bg-red-600 hover:bg-red-500 text-white">YES — RUN IT</button>
+                </div>
+              </div>
+            </div>
+          )}
           <span className={`text-[11px] font-bold ${running ? "text-emerald-400 animate-pulse" : done ? "text-slate-400" : "text-slate-600"}`}>
             {running ? "LIVE" : done ? "COMPLETE" : "idle"}
           </span>
