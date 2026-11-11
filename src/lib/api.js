@@ -40,4 +40,13 @@ export const g9api = {
   policyEvaluate: (req) => call("/policy/evaluate", { method: "POST", body: JSON.stringify(req) }),
   invokeTool: (spec, callArgs, executeNow = false) =>
     call("/tools/invoke", { method: "POST", body: JSON.stringify({ spec, call: callArgs, execute_now: executeNow }) }),
+  engagementCreate: (eng) => call("/engagements/create", { method: "POST", body: JSON.stringify(eng) }),
+  verifyTarget: (eid, target) => call(`/engagements/${encodeURIComponent(eid)}/verify-target?target=${encodeURIComponent(target)}`),
+  realMissionLive: (eid, mode = "hitl", planner = "rulebook", execute = true) =>
+    call(`/engagements/${encodeURIComponent(eid)}/mission/live?mode=${mode}&planner=${planner}&execute=${execute}`, { method: "POST" }),
+  realMissionEvents: (eid, since = 0) => call(`/engagements/${encodeURIComponent(eid)}/mission/events?since=${since}`),
+  realMissionPending: (eid) => call(`/engagements/${encodeURIComponent(eid)}/mission/pending`),
+  realMissionApprove: (eid, actionId) =>
+    call(`/engagements/${encodeURIComponent(eid)}/mission/approve?action_id=${encodeURIComponent(actionId)}`, { method: "POST" }),
+  realMissionReport: (eid) => call(`/engagements/${encodeURIComponent(eid)}/mission/report`),
 };

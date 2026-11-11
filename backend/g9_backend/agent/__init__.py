@@ -284,7 +284,10 @@ class Agent:
         m.emit("phase", f"AGENT ONLINE: planner={self.planner.name} mode={m.autonomy.mode} max_steps={self.max_steps}")
         results = []
         while self.steps < self.max_steps:
-            state = {
+            if hasattr(m, "planner_state"):
+                state = m.planner_state(self.steps, self.max_steps)
+            else:
+                state = {
                 "allowed_tools": set(m.engine.grants[m.engagement_id]["tools"]),
                 "targets": {"http": m.http_target, "debug": m.debug_target},
                 "findings": [
@@ -293,7 +296,7 @@ class Agent:
                 ],
                 "steps": self.steps,
                 "max_steps": self.max_steps,
-            }
+                }
             switch = getattr(self.planner, "switched", None)
             if switch and switch not in [e.get("msg") for e in m.events]:
                 m.emit("gate", f"PLANNER FAILOVER: {switch}")
@@ -305,6 +308,20 @@ class Agent:
                 break
             if action is None:
                 m.emit("thinking", f"planner {self.planner.name}: mission complete after {self.steps} steps")
+                break
+            # the agent boundary itself validates the proposal — defense in
+            # depth before the policy gate: ungranted tool or out-of-scope
+            # target is refused and recorded, whatever the planner was
+            if action.get("tool") not in state["allowed_tools"]:
+                msg = f"planner proposed ungranted tool {action.get('tool')!r} — the model cannot grant itself capabilities"
+                m.emit("gate", f"AGENT REFUSAL: {msg}")
+                self.refusals.append(msg)
+                break
+            if action.get("target") not in set(state["targets"].values()):
+                msg = (f"planner proposed target {action.get('target')!r} outside the authorized "
+                       "scope — targets come from the engagement, never model prose")
+                m.emit("gate", f"AGENT REFUSAL: {msg}")
+                self.refusals.append(msg)
                 break
             m.emit("thinking", f"planner {self.planner.name} proposes: {action['tool']} on {action['target']} — {action.get('reason', '')}")
             r = m._invoke(action["tool"], action["target"], action.get("args") or {})

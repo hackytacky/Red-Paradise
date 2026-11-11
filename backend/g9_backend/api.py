@@ -295,6 +295,143 @@ def lab_mode(mode: str):
     return m.autonomy.set_mode(mode, "operator")
 
 
+# ------------------------------------------- real engagements (live)
+
+class EngagementIn(BaseModel):
+    """A REAL engagement: the operator registers the authorized scope
+    from their signed RoE. roe_signed=False creates the record
+    red-locked - the mission refuses to run unsigned."""
+
+    engagement_id: str
+    scope: list[str]
+    roe_signed: bool = False
+    principals: list[str] = ["agent:chimera"]
+    grants: list[str] = []
+
+
+@app.post("/engagements/create")
+def engagement_create(req: EngagementIn):
+    try:
+        record = _engagements.create(
+            engagement_id=req.engagement_id, scope=req.scope,
+            roe_signed=req.roe_signed, principals=req.principals,
+            grants=set(req.grants), tier="real",
+        )
+    except Exception as e:
+        return {"ok": False, "reason": str(e)}
+    _ledger.append(actor="operator", action="engagement.create",
+                   subject=req.engagement_id,
+                   detail=f"scope={req.scope} roe_signed={req.roe_signed} grants={sorted(req.grants)}")
+    return {"ok": True, "engagement": record}
+
+
+_real_state: dict = {}
+
+
+def _get_real(eid: str) -> dict:
+    st = _real_state.get(eid)
+    if st is None:
+        raise KeyError(f"no live mission for engagement {eid!r} - POST /engagements/{eid}/mission/live first")
+    return st
+
+
+@app.post("/engagements/{eid}/mission/live")
+def real_mission_live(eid: str, mode: str = "hitl", planner: str = "rulebook", execute: bool = True):
+    """Launch the agent-driven REAL mission in the background. Default
+    mode is human-in-the-loop - escalate to autonomous only when you
+    trust the stack. planner: rulebook | llm. execute=true runs the
+    real tool containers (requires Docker + pinned images); false
+    builds the hardened commands without executing."""
+    import threading
+    from .real_mission import RealMission, RealMissionError
+    rec = _engagements.engagements.get(eid)
+    if rec is None:
+        return {"ok": False, "reason": f"unknown engagement {eid!r} - POST /engagements/create first"}
+    try:
+        mission = RealMission(engagement=rec, mode=mode, execute=execute)
+    except RealMissionError as e:
+        return {"ok": False, "reason": str(e)}
+    prev = _real_state.get(eid)
+    if prev is not None:
+        try:
+            prev["mission"].close()
+        except Exception:
+            pass
+    _real_state[eid] = {"mission": mission, "done": False, "error": None}
+
+    def _run():
+        try:
+            if planner == "llm":
+                import os
+                from .agent import LLMPlanner, FallbackPlanner
+                main = LLMPlanner()
+                fb_endpoint = os.environ.get("G9_LLM_FALLBACK_ENDPOINT", "")
+                fb_model = os.environ.get("G9_LLM_FALLBACK_MODEL", "local")
+                p = FallbackPlanner(main, LLMPlanner(endpoint=fb_endpoint, model=fb_model)) if fb_endpoint else main
+                mission.run(planner=p)
+            else:
+                mission.run()
+        except Exception as e:  # surface honestly, never silently
+            mission.error = str(e)
+        finally:
+            mission.done = True
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ok": True, "engagement_id": eid, "mode": mode, "planner": planner,
+            "execute": execute, "note": f"poll GET /engagements/{eid}/mission/events for the live stream"}
+
+
+@app.get("/engagements/{eid}/mission/events")
+def real_mission_events(eid: str, since: int = 0):
+    try:
+        st = _get_real(eid)
+    except KeyError as e:
+        return {"ok": False, "reason": str(e), "events": [], "next": 0, "done": True}
+    m = st["mission"]
+    batch = m.events[since:]
+    return {"ok": True, "mode": m.autonomy.mode, "pending": m.pending_actions(),
+            "events": batch, "next": len(m.events), "done": m.done,
+            "error": m.error, "report": m.report if m.done else None}
+
+
+@app.get("/engagements/{eid}/mission/pending")
+def real_mission_pending(eid: str):
+    try:
+        st = _get_real(eid)
+    except KeyError as e:
+        return {"ok": False, "reason": str(e)}
+    m = st["mission"]
+    return {"ok": True, "mode": m.autonomy.mode, "pending": m.pending_actions()}
+
+
+@app.post("/engagements/{eid}/mission/approve")
+def real_mission_approve(eid: str, action_id: str):
+    try:
+        st = _get_real(eid)
+    except KeyError as e:
+        return {"ok": False, "reason": str(e)}
+    return st["mission"].approve_pending(action_id)
+
+
+@app.get("/engagements/{eid}/mission/report")
+def real_mission_report(eid: str):
+    try:
+        st = _get_real(eid)
+    except KeyError as e:
+        return {"ok": False, "reason": str(e)}
+    m = st["mission"]
+    if m.report is None:
+        return {"ok": False, "reason": "mission still running (or not started) - poll the events stream"}
+    return m.report
+
+
+@app.get("/engagements/{eid}/verify-target")
+def engagement_verify_target(eid: str, target: str):
+    """Scope is the ONLY source of targets - the manager answers whether
+    a target is authorized before anything is proposed."""
+    return _engagements.verify_target(eid, target)
+
+
 # ------------------------------------------------- admission desk (live)
 
 class AdmitRequest(BaseModel):

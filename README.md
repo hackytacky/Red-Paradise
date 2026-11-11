@@ -32,6 +32,8 @@ Demo deployment: all telemetry is simulated. On the G9 host, the same gates and 
 | `/report` | CALLIOPE owner-facing Markdown report builder |
 | `/setup` | Tool adapters, local model registry, mission configuration |
 | `/architecture` | SPECTRE architecture: diagram, integration priorities, component map, capability tiers, final recommendations |
+| `/console` | Mission Console: live decision/gate/execution/verification stream + 1-click quick start |
+| `/real` | Real Engagement: register an authorized engagement, launch the agent-driven mission, approve live, verified report |
 | `/evidence` | Evidence Graph + Verification Authority engines, live |
 | `/execution` | Trusted execution: canonical action spec + approval state machine, live |
 | `/resilience` | Tripwire scanner, model-routing scheduler, temporal memory, live |

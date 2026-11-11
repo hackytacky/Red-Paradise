@@ -51,8 +51,12 @@ class TestRulebookAgent:
 
         m = LabMission(mode="autonomous")
         try:
-            Agent(m, EvilPlanner(), max_steps=2).run()
-            assert any("POLICY DENY" in e["msg"] for e in m.events)
+            report = Agent(m, EvilPlanner(), max_steps=2).run()
+            # defense in depth: the agent boundary refuses the out-of-scope
+            # proposal BEFORE the policy gate — and the gate would have
+            # caught it too; either refusal is recorded, never executed
+            assert any(("POLICY DENY" in e["msg"]) or ("AGENT REFUSAL" in e["msg"]) for e in m.events)
+            assert report["agent"]["refusals"]
             # and the honest path still works after the refusal
             m.budget.kill("operator test")
             halted = m._invoke("http-probe", m.http_target)

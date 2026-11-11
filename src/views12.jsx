@@ -153,3 +153,192 @@ export function MissionConsoleView() {
     </div>
   );
 }
+
+/* ================================================================
+   REAL ENGAGEMENT CONSOLE — register an authorized engagement
+   (scope from your signed RoE), launch the agent-driven mission
+   against it, watch the same live stream, approve queued actions,
+   and read the verified report. Doctrine: no signed RoE → the
+   launch is refused; scope is the only source of targets.
+   ================================================================ */
+
+export function RealEngagementView() {
+  const [eid, setEid] = useState("ENG-MYJOB-1");
+  const [scope, setScope] = useState("target1.authorized-domain.com");
+  const [grants, setGrants] = useState("nmap-scoped, httpx, testssl, nuclei");
+  const [roe, setRoe] = useState(false);
+  const [mode, setMode] = useState("hitl");
+  const [planner, setPlanner] = useState("rulebook");
+  const [execute, setExecute] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [done, setDone] = useState(false);
+  const [report, setReport] = useState(null);
+  const [pending, setPending] = useState([]);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const cursor = useRef(0);
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    if (!running) return;
+    const iv = setInterval(async () => {
+      const r = await g9api.realMissionEvents(eid, cursor.current);
+      if (!r.ok) return;
+      if (r.events.length) {
+        setEvents((e) => [...e, ...r.events]);
+        cursor.current = r.next;
+        if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight;
+      }
+      setPending(r.pending || []);
+      if (r.done) {
+        setRunning(false);
+        setDone(true);
+        if (r.error) setError(r.error);
+        if (r.report) setReport(r.report);
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [running, eid]);
+
+  async function launch() {
+    setEvents([]); setDone(false); setReport(null); setError(""); setNotice("");
+    cursor.current = 0;
+    const created = await g9api.engagementCreate({
+      engagement_id: eid.trim(),
+      scope: scope.split(",").map((s) => s.trim()).filter(Boolean),
+      roe_signed: roe,
+      principals: ["agent:chimera"],
+      grants: grants.split(",").map((s) => s.trim()).filter(Boolean),
+    });
+    if (!created.ok) { setError(created.reason || "failed to create engagement"); return; }
+    const r = await g9api.realMissionLive(eid.trim(), mode, planner, execute);
+    if (r.ok) setRunning(true);
+    else setError(r.reason || "failed to launch");
+  }
+
+  async function approve(actionId) {
+    const r = await g9api.realMissionApprove(eid, actionId);
+    if (!r.ok) setError(r.reason || "approval failed");
+    else setNotice(`approved ${actionId} — executing now`);
+    const p = await g9api.realMissionPending(eid);
+    if (p.ok) setPending(p.pending || []);
+  }
+
+  return (
+    <div className="space-y-4">
+      <Panel title="⯈ Real Engagement — authorized target, full gated chain, live stream">
+        <div className="grid md:grid-cols-2 gap-3 mb-3">
+          <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider space-y-1">
+            engagement id
+            <input value={eid} onChange={(e) => setEid(e.target.value)} disabled={running}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-slate-200 font-mono normal-case" />
+          </label>
+          <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider space-y-1">
+            authorized scope (CSV — from your signed RoE, nothing else)
+            <input value={scope} onChange={(e) => setScope(e.target.value)} disabled={running}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-slate-200 font-mono normal-case" />
+          </label>
+          <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider space-y-1">
+            granted tools (CSV — adapters only)
+            <input value={grants} onChange={(e) => setGrants(e.target.value)} disabled={running}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-[12px] text-slate-200 font-mono normal-case" />
+          </label>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
+              <input type="checkbox" checked={roe} onChange={(e) => setRoe(e.target.checked)} disabled={running}
+                className="accent-red-500" />
+              RoE SIGNED (no → red-locked, launch refused)
+            </label>
+            <label className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
+              <input type="checkbox" checked={execute} onChange={(e) => setExecute(e.target.checked)} disabled={running}
+                className="accent-cyan-500" />
+              EXECUTE FOR REAL (Docker)
+            </label>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <div className="flex items-center gap-1 text-[11px]">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">mode</span>
+            {["hitl", "autonomous", "manual"].map((m) => (
+              <button key={m} onClick={() => setMode(m)} disabled={running}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold border ${mode === m ? "bg-cyan-600/20 text-cyan-200 border-cyan-500/50" : "text-slate-400 border-slate-700 hover:bg-slate-800"}`}>
+                {m === "hitl" ? "human-in-the-loop" : m}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-[11px]">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">brain</span>
+            {[["rulebook", "rulebook"], ["llm", "local LLM"]].map(([p, label]) => (
+              <button key={p} onClick={() => setPlanner(p)} disabled={running}
+                className={`px-2.5 py-1 rounded text-[11px] font-bold border ${planner === p ? "bg-fuchsia-600/20 text-fuchsia-200 border-fuchsia-500/50" : "text-slate-400 border-slate-700 hover:bg-slate-800"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <button onClick={launch} disabled={running}
+            className={`px-4 py-2 rounded-lg text-[12px] font-bold ${running ? "bg-slate-700 text-slate-400" : "bg-red-600 hover:bg-red-500 text-white"}`}>
+            {running ? "● MISSION RUNNING…" : "⯈ REGISTER + LAUNCH REAL MISSION"}
+          </button>
+          <span className={`text-[11px] font-bold ${running ? "text-emerald-400 animate-pulse" : done ? "text-slate-400" : "text-slate-600"}`}>
+            {running ? "LIVE" : done ? "COMPLETE" : "idle"}
+          </span>
+        </div>
+        {error && <div className="mb-2 px-3 py-2 rounded bg-red-500/10 border border-red-500/40 text-red-300 text-[11px] font-mono">{error}</div>}
+        {notice && <div className="mb-2 px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono">{notice}</div>}
+        {pending.length > 0 && (
+          <div className="mb-2 px-3 py-2 rounded bg-amber-500/10 border border-amber-500/40 text-[11px] font-mono space-y-1">
+            <div className="text-amber-300 font-bold">AWAITING OPERATOR APPROVAL ({pending.length})</div>
+            {pending.map((a) => (
+              <div key={a.action_id} className="flex items-center gap-2">
+                <span className="text-slate-300">{a.tool} → {a.target}</span>
+                <button onClick={() => approve(a.action_id)}
+                  className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">APPROVE</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div ref={boxRef} className="h-[420px] overflow-y-auto rounded-lg bg-black/70 border border-slate-800 p-3 space-y-1 font-mono text-[11px]">
+          {events.length === 0 && !running && (
+            <div className="text-slate-700">register the engagement from your signed RoE and launch — every policy verdict, approval, real execution, and verification step streams here</div>
+          )}
+          {events.map((e, i) => {
+            const st = KIND_STYLE[e.kind] || KIND_STYLE.phase;
+            return (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-slate-700 shrink-0">{new Date(e.t * 1000).toLocaleTimeString()}</span>
+                <span className={`shrink-0 font-black ${st.cls}`}>{st.icon} {st.label}</span>
+                <span className={st.cls}>{e.msg}</span>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
+
+      {report && (
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+          {[
+            ["candidates", report.candidates, "text-slate-200"],
+            ["reproduced", report.reproduced, "text-emerald-300"],
+            ["unverifiable", report.unverifiable, "text-amber-300"],
+            ["evidence nodes", report.nodes, "text-cyan-300"],
+            ["ledger records", report.ledger_records, "text-violet-300"],
+            ["tokens spent", report.tokens_used, "text-amber-300"],
+            ["ledger verified", report.ledger_verified ? "YES" : "NO", report.ledger_verified ? "text-emerald-300" : "text-red-300"],
+          ].map(([label, value, cls]) => (
+            <div key={label} className="rounded-lg bg-slate-900/70 border border-slate-800 px-3 py-2">
+              <div className="text-[9px] uppercase tracking-wider text-slate-500">{label}</div>
+              <div className={`text-lg font-black ${cls}`}>{String(value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {report && (
+        <Panel title="Verification note — read it">
+          <div className="text-[11px] text-slate-400 font-mono leading-relaxed">{report.verification_note}</div>
+        </Panel>
+      )}
+    </div>
+  );
+}
