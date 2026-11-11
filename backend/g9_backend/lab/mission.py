@@ -235,12 +235,15 @@ class LabMission:
         }
 
     def _target_for(self, cand: dict) -> str | None:
-        # candidate host labels carry host:port
-        host = cand["label"].split("]:")[0].split("[")[-1] if "[" in cand["label"] else None
-        for scope in [self.http_target, self.debug_target]:
-            if scope in cand["label"] or scope in str(cand.get("meta", {})):
+        """Structured host field first (candidates carry meta.host);
+        label scan is only a legacy fallback."""
+        host = cand.get("meta", {}).get("host")
+        if host in (self.http_target, self.debug_target):
+            return host
+        for scope in (self.http_target, self.debug_target):
+            if scope in cand["label"]:
                 return scope
-        return self.http_target if host is None else None
+        return None
 
     # -------------------------------------------------------- out-of-run
 

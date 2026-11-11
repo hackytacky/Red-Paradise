@@ -84,7 +84,7 @@ class ResultCollector:
                 "scope": self.graph.scope, "source": tool_id, "collected_at": ts,
                 "provenance": {"tool": tool_id, "template": data.get("template-id")},
                 "validation_status": "candidate",  # NEVER confirmed here
-                "meta": {"severity": data.get("info", {}).get("severity", "unknown"), "matched_at": data.get("matched-at")},
+                "meta": {"severity": data.get("info", {}).get("severity", "unknown"), "matched_at": data.get("matched-at"), "host": data.get("host")},
             })
             candidates.append(node)
         return candidates

@@ -225,6 +225,42 @@ def arsenal_admit(req: AdmitRequest):
     return result
 
 
+# ------------------------------------------- eval / bench / specialists
+
+@app.get("/eval/lab")
+def eval_lab(runs: int = 2):
+    """Stage 06, live: measured pipeline metrics against known ground
+    truth — recall, FP rejection, gate integrity, ledger verification."""
+    from .eval import evaluate_lab_pipeline
+    return evaluate_lab_pipeline(runs=max(1, min(runs, 5)))
+
+
+@app.get("/bench/report")
+def bench_report():
+    """Stage 03: the orchestrator benchmark harness — identical task
+    suite, deterministic scorer, reference baseline."""
+    from .bench import benchmark_report
+    return benchmark_report()
+
+
+@app.get("/specialists/catalog")
+def specialists_catalog():
+    """Stage 05: the nine specialist pipelines and their phase shapes."""
+    from .specialists import catalog
+    return catalog()
+
+
+@app.post("/specialists/{name}/run")
+def specialists_run(name: str):
+    """Execute a specialist pipeline (native phases run for real; container
+    phases build hardened commands for the host)."""
+    from .specialists import run_specialist, SpecialistError
+    try:
+        return run_specialist(name)
+    except SpecialistError as e:
+        return {"ok": False, "reason": str(e)}
+
+
 @app.get("/intel/sources")
 def intel_sources(category: str | None = None, flag: str | None = None):
     """The full intel source registry (542 sources) with governance

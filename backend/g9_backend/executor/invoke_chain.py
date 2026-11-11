@@ -75,6 +75,24 @@ def register_adapter(tool_id: str, dispatch_fn) -> None:
     ADAPTERS[tool_id] = dispatch_fn
 
 
+SANDBOX_REQUIREMENTS = {
+    "container": "restricted-analysis",
+    "kvm": "hostile-research-vm",
+    "service": "trusted-service",
+}
+
+
+def required_sandbox_class(tool_id: str) -> str:
+    """The required worker class comes from the registry entry — never
+    hardcoded. Unknown tools (lab-native ids) default to the most
+    restrictive container class."""
+    from ..tools.registry_data import by_id
+    entry = by_id(tool_id)
+    if entry is None:
+        return "restricted-analysis"
+    return SANDBOX_REQUIREMENTS.get(entry[3], "restricted-analysis")
+
+
 def invoke_tool(
     *,
     engine: PolicyEngine,
@@ -96,14 +114,17 @@ def invoke_tool(
         return blocked("mcp-contract", str(e))
     audit.append({"stage": "mcp-contract", "ok": True, "family": r["family"]})
 
-    # 2. Policy decision point
+    # 2. Policy decision point — the required sandbox class comes from
+    # the tool's REGISTRY class, not a hardcoded constant: container
+    # tools need restricted-analysis, KVM tools hostile-research-vm,
+    # service tools trusted-service.
     decision = engine.evaluate({
         "engagement_id": spec["engagement_id"],
         "principal_id": spec["principal_id"],
         "tool_id": spec["tool_id"],
         "targets": spec["target_set"],
         "sandbox_class": spec.get("sandbox_profile"),
-        "required_sandbox_class": "restricted-analysis",
+        "required_sandbox_class": required_sandbox_class(spec["tool_id"]),
     })
     if decision.effect == "deny":
         return blocked("policy", "; ".join(decision.reasons))

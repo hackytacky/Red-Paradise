@@ -149,7 +149,7 @@ class TestContractAndChain:
         engine, budget = self.build()
         r = invoke_tool(
             engine=engine, budget=budget,
-            spec=make_action_spec(SPEC),
+            spec=make_action_spec({**SPEC, "sandbox_profile": "trusted-service"}),
             call={"targets": ["lab-api.g9.local"]},
         )
         assert r["ok"], r
@@ -161,7 +161,7 @@ class TestContractAndChain:
         engine, budget = self.build()
         r = invoke_tool(
             engine=engine, budget=budget,
-            spec=make_action_spec({**SPEC, "tool_id": "abusech", "normalized_arguments": {"feed": "malwarebazaar"}}),
+            spec=make_action_spec({**SPEC, "tool_id": "abusech", "sandbox_profile": "trusted-service", "normalized_arguments": {"feed": "malwarebazaar"}}),
             call={"targets": ["lab-api.g9.local"], "feed": "malwarebazaar"},
         )
         assert r["ok"], r

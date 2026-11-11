@@ -57,8 +57,11 @@ def build_command(
         raise RuntimeError_(
             "hostile-research workloads are never containerized — route to the KVM worker"
         )
-    if spec.get("sandbox_profile") not in ("restricted-analysis", None):
+    if spec.get("sandbox_profile") not in ("restricted-analysis", "trusted-service", None):
         raise RuntimeError_(f"unknown sandbox profile {spec.get('sandbox_profile')!r}")
+    # trusted-service: service-CLASS data sources (feeds, intel APIs) still
+    # execute as hardened containers — the class describes the source,
+    # never a weaker isolation profile
 
     network_policy = spec.get("network_policy_id", "none")
     for name in env_var_names or []:
