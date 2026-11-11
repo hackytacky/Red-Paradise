@@ -97,8 +97,14 @@ class LLMPlanner(Planner):
             }).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.load(resp)
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.load(resp)
+        except (urllib.error.URLError, OSError, json.JSONDecodeError, KeyError) as e:
+            raise AgentError(
+                f"LLM endpoint {self.endpoint!r} unreachable or returned an invalid "
+                f"response: {e} - never a faked run"
+            )
         return data["choices"][0]["message"]["content"]
 
     def decide(self, state: dict) -> dict:
@@ -134,6 +140,32 @@ class LLMPlanner(Planner):
         return action
 
 
+class FallbackPlanner(Planner):
+    """Main brain first; on failure (endpoint down, malformed output)
+    switch to the fallback brain for the rest of the mission. The
+    switch is sticky and recorded — never silent."""
+
+    name = "llm+fallback"
+
+    def __init__(self, main: Planner, fallback: Planner):
+        self.main = main
+        self.fallback = fallback
+        self.active = main
+        self.switched: str | None = None
+
+    def decide(self, state: dict) -> dict | None:
+        if self.active is not self.main:
+            return self.fallback.decide(state)
+        try:
+            return self.main.decide(state)
+        except AgentError as e:
+            if self.fallback is None:
+                raise
+            self.active = self.fallback
+            self.switched = f"{self.main.name} failed ({e}) - switching to fallback {self.fallback.name}"
+            return self.fallback.decide(state)
+
+
 class Agent:
     """The loop: propose → gate → execute → observe, until done or a
     hard limit. Every step is emitted to the mission event stream."""
@@ -160,6 +192,9 @@ class Agent:
                 "steps": self.steps,
                 "max_steps": self.max_steps,
             }
+            switch = getattr(self.planner, "switched", None)
+            if switch and switch not in [e.get("msg") for e in m.events]:
+                m.emit("gate", f"PLANNER FAILOVER: {switch}")
             try:
                 action = self.planner.decide(state)
             except AgentError as e:

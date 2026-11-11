@@ -140,3 +140,58 @@ class TestLLMPlanner:
             assert any("malformed JSON" in e["msg"] for e in m.events)
         finally:
             m.close()
+
+
+class TestFallbackPlanner:
+    def _flaky(self, responses, name="fake"):
+        from g9_backend.agent import LLMPlanner
+
+        class Fake(LLMPlanner):
+            def __init__(self, responses, name="fake"):
+                super().__init__(endpoint="http://fake.local/v1", model="fake")
+                self.name = name
+                self.responses = responses
+                self.calls = 0
+
+            def _complete(self, prompt):
+                r = self.responses[min(self.calls, len(self.responses) - 1)]
+                self.calls += 1
+                if r is None:
+                    raise AgentError("LLM endpoint 'http://fake.local/v1' unreachable: down")
+                return r
+
+        return Fake(responses)
+
+    def test_failover_to_fallback_brain(self):
+        from g9_backend.agent import FallbackPlanner
+        import json
+        m = LabMission(mode="autonomous")
+        try:
+            target = m.http_target
+            main = self._flaky([None, None])  # main endpoint always down
+            fb = self._flaky([
+                json.dumps({"tool": "http-probe", "target": target, "args": {}, "reason": "fallback brain", "done": False}),
+                json.dumps({"done": True}),
+            ], name="fallback")
+            planner = FallbackPlanner(main, fb)
+            report = Agent(m, planner, max_steps=5).run()
+            assert report["agent"]["steps"] == 1
+            assert planner.switched and "switching to fallback" in planner.switched
+            assert any("PLANNER FAILOVER" in e["msg"] for e in m.events)
+            assert any("fallback brain" in e["msg"] for e in m.events)
+        finally:
+            m.close()
+
+    def test_no_failover_when_main_healthy(self):
+        from g9_backend.agent import FallbackPlanner
+        import json
+        m = LabMission(mode="autonomous")
+        try:
+            target = m.http_target
+            main = self._flaky([json.dumps({"done": True})], name="main")
+            fb = self._flaky([json.dumps({"done": True})], name="fallback")
+            planner = FallbackPlanner(main, fb)
+            Agent(m, planner, max_steps=3).run()
+            assert planner.switched is None
+        finally:
+            m.close()

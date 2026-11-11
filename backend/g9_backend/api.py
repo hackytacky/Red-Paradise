@@ -174,8 +174,16 @@ def lab_run_live(mode: str = "autonomous", planner: str = "rulebook"):
     def _run():
         try:
             if planner == "llm":
-                from .agent import Agent, LLMPlanner, AgentError
-                _lab_state["report"] = Agent(mission, LLMPlanner()).run()
+                import os
+                from .agent import Agent, LLMPlanner, FallbackPlanner
+                main = LLMPlanner()
+                fb_endpoint = os.environ.get("G9_LLM_FALLBACK_ENDPOINT", "")
+                fb_model = os.environ.get("G9_LLM_FALLBACK_MODEL", "local")
+                if fb_endpoint:
+                    p = FallbackPlanner(main, LLMPlanner(endpoint=fb_endpoint, model=fb_model))
+                else:
+                    p = main
+                _lab_state["report"] = Agent(mission, p).run()
             else:
                 from .agent import Agent, RulebookPlanner
                 _lab_state["report"] = Agent(mission, RulebookPlanner()).run()
