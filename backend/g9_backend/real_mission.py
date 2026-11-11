@@ -43,10 +43,15 @@ class RealMissionError(ValueError):
 
 
 # tools whose invocation against a live third-party target is loud
-# enough to require operator approval in hitl/manual modes
+# enough to require operator approval in hitl/manual modes - every
+# offensive-tier tool is approval-gated by default
 HIGH_IMPACT_REAL_TOOLS = {
     "nmap-scoped", "masscan", "nuclei", "ffuf", "gobuster",
     "feroxbuster", "owasp-zap", "caido", "hakrawler",
+    # offensive waves
+    "sqlmap", "xsstrike-dalfox", "commix", "ssrfmap-gopherus",
+    "hydra", "hashcat", "john", "kerbrute", "getnpusers",
+    "getuserspnss", "secretsdump", "wmiexec-psexec", "certipy",
 }
 
 TOKEN_COST_PER_ACTION = 500
@@ -69,8 +74,22 @@ _FAMILY_DEFAULTS = {
     "control_version": "v1",
     "feed": "default",
     "platforms": [],
-    "service": "operator-registered",
     "purpose": "engagement",
+    # offensive waves
+    "risk": "1",
+    "level": "1",
+    "params": "id=1",
+    "param": "url",
+    "service": "ssh",
+    "usernames": ["admin"],
+    "users_file": "/opt/assets/users.txt",
+    "hashes_file": "/opt/assets/hashes.txt",
+    "domain": "TARGET",
+    "credentials_env": "G9_AD_CREDS",
+    "technique": "wmiexec",
+    "command_id": "whoami",
+    "dc": "TARGET",
+    "output_format": "hashcat",
 }
 
 
@@ -92,6 +111,10 @@ def build_call(tool_id: str, target: str, args: dict | None = None) -> dict:
             call[field] = [target]
         elif ftype.startswith("str"):
             call[field] = _FAMILY_DEFAULTS.get(field, target)
+    # TARGET sentinel: the scope entry stands in for the domain/dc
+    for k in ("domain", "dc"):
+        if call.get(k) == "TARGET":
+            call[k] = target
     if "command" in call or "shell" in call or "argv" in call:
         raise RealMissionError("raw shell strings are rejected at the contract boundary")
     return call
@@ -124,6 +147,7 @@ class RealRulebookPlanner(Planner):
     name = "rulebook-real"
 
     PRIORITY = [
+        # recon tier
         ("network-recon", "nmap-scoped"),
         ("web-probe", "httpx"),
         ("tls-audit", "testssl"),
@@ -134,6 +158,21 @@ class RealRulebookPlanner(Planner):
         ("dns-query", "dig"),
         ("osint-harvest", "theharvester"),
         ("web-crawl", "hakrawler"),
+        # offensive wave 1: web exploitation (only runs if granted)
+        ("web-exploit-sqli", "sqlmap"),
+        ("web-exploit-xss", "xsstrike-dalfox"),
+        ("web-exploit-commix", "commix"),
+        ("web-exploit-ssrf", "ssrfmap-gopherus"),
+        # offensive wave 2: credential attacks (only runs if granted)
+        ("credential-brute", "hydra"),
+        ("hash-crack", "hashcat"),
+        ("kerb-enum", "kerbrute"),
+        ("kerb-asreproast", "getnpusers"),
+        ("kerb-kerberoast", "getuserspnss"),
+        # offensive wave 3: AD kill-chain (only runs if granted)
+        ("ad-secret-dump", "secretsdump"),
+        ("ad-cert-abuse", "certipy"),
+        ("ad-remote-exec", "wmiexec-psexec"),
     ]
 
     def __init__(self, tools: set[str], targets: list[str]):

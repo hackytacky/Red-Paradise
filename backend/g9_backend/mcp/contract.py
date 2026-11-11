@@ -40,6 +40,21 @@ TOOL_FAMILIES: dict[str, dict] = {
     "typosquat-analysis": {"schema": {"domains": "list[str]", "flags": "list[str]? (allowlisted)"}, "adapters": ["dnstwist"]},
     "web-crawl": {"schema": {"targets": "list[str]", "flags": "list[str]? (allowlisted)"}, "adapters": ["hakrawler"]},
     "identity-session": {"schema": {"account_id": "str (operator-registered)", "service": "str", "purpose": "str (allowlisted)"}, "adapters": ["identity-vault"]},
+    # ---- offensive waves: exploitation, credentials, AD kill-chain ----
+    # credentials travel as env-var NAMES (host-side secrets), never
+    # values - never in argv, never in the ledger
+    "web-exploit-sqli": {"schema": {"target": "str", "params": "str?", "risk": "str? (1-3)", "level": "str? (1-5)"}, "adapters": ["sqlmap"]},
+    "web-exploit-xss": {"schema": {"target": "str", "params": "str?"}, "adapters": ["xsstrike-dalfox"]},
+    "web-exploit-commix": {"schema": {"target": "str", "param": "str?"}, "adapters": ["commix"]},
+    "web-exploit-ssrf": {"schema": {"target": "str", "param": "str"}, "adapters": ["ssrfmap-gopherus"]},
+    "credential-brute": {"schema": {"targets": "list[str]", "service": "str", "usernames": "list[str]", "wordlist": "str (admission-qualified asset)"}, "adapters": ["hydra"]},
+    "hash-crack": {"schema": {"hashes_file": "str (admission-qualified artifact)", "mode": "str"}, "adapters": ["hashcat", "john"]},
+    "kerb-enum": {"schema": {"domain": "str", "users_file": "str (admission-qualified asset)", "dc": "str?"}, "adapters": ["kerbrute"]},
+    "kerb-asreproast": {"schema": {"domain": "str", "users_file": "str (admission-qualified asset)", "credentials_env": "str (env var NAME, host-side secret)"}, "adapters": ["getnpusers"]},
+    "kerb-kerberoast": {"schema": {"domain": "str", "credentials_env": "str (env var NAME, host-side secret)", "output_format": "str?"}, "adapters": ["getuserspnss"]},
+    "ad-secret-dump": {"schema": {"target": "str", "credentials_env": "str (env var NAME, host-side secret)"}, "adapters": ["secretsdump"]},
+    "ad-remote-exec": {"schema": {"target": "str", "credentials_env": "str (env var NAME, host-side secret)", "technique": "str (wmiexec|psexec)", "command_id": "str (allowlisted command)"}, "adapters": ["wmiexec-psexec"]},
+    "ad-cert-abuse": {"schema": {"target": "str", "credentials_env": "str (env var NAME, host-side secret)", "template": "str?"}, "adapters": ["certipy"]},
 }
 
 

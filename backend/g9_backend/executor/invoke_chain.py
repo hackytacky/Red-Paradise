@@ -36,6 +36,12 @@ from ..tools.wave3_adapters import (
     dispatch_exiftool, dispatch_hachoir, dispatch_dnstwist, dispatch_hakrawler,
     dispatch_promptfoo, dispatch_garak,
 )
+from ..tools.offensive_adapters import (
+    dispatch_sqlmap, dispatch_dalfox, dispatch_commix, dispatch_ssrfmap,
+    dispatch_hydra, dispatch_hashcat, dispatch_john, dispatch_kerbrute,
+    dispatch_getnpusers, dispatch_getuserspnss, dispatch_secretsdump,
+    dispatch_wmiexec_psexec, dispatch_certipy,
+)
 
 ADAPTERS: dict = {
     "nmap-scoped": dispatch_nmap,
@@ -68,6 +74,13 @@ ADAPTERS: dict = {
     "ldapsearch": dispatch_ldapsearch, "windapsearch": dispatch_windapsearch,
     "bloodhound": dispatch_bloodhound, "sharphound": dispatch_sharphound,
     "azurehound": dispatch_azurehound, "pyrit": dispatch_pyrit,
+    # offensive waves: web exploitation, credential attacks, AD kill-chain
+    "sqlmap": dispatch_sqlmap, "xsstrike-dalfox": dispatch_dalfox,
+    "commix": dispatch_commix, "ssrfmap-gopherus": dispatch_ssrfmap,
+    "hydra": dispatch_hydra, "hashcat": dispatch_hashcat, "john": dispatch_john,
+    "kerbrute": dispatch_kerbrute, "getnpusers": dispatch_getnpusers,
+    "getuserspnss": dispatch_getuserspnss, "secretsdump": dispatch_secretsdump,
+    "wmiexec-psexec": dispatch_wmiexec_psexec, "certipy": dispatch_certipy,
 }
 
 
