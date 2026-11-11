@@ -81,19 +81,40 @@ class LLMPlanner(Planner):
     def __init__(self, endpoint: str | None = None, model: str | None = None):
         self.endpoint = endpoint or os.environ.get("G9_LLM_ENDPOINT", "")
         self.model = model or os.environ.get("G9_LLM_MODEL", "local")
+        self.temperature = float(os.environ.get("G9_LLM_TEMPERATURE", "0"))
+        self._auto_bound: str | None = None
         if not self.endpoint:
             raise AgentError(
                 "no LLM endpoint configured — set G9_LLM_ENDPOINT (e.g. "
                 "http://127.0.0.1:11434/v1 for Ollama) or use the rulebook planner"
             )
 
-    def _complete(self, prompt: str) -> str:
+    def _resolve_model(self) -> str:
+        """Bind to the weights AS INSTALLED: if the configured model name
+        isn't what the endpoint serves, auto-bind to the served model
+        and record the adjustment - never fail on a name mismatch."""
+        if self._auto_bound:
+            return self._auto_bound
+        try:
+            req = urllib.request.Request(self.endpoint.rstrip("/") + "/models")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                served = [m.get("id") for m in json.load(resp).get("data", []) if m.get("id")]
+        except Exception:
+            return self.model  # endpoint may not expose /models - use as configured
+        if self.model in served:
+            return self.model
+        if served:
+            self._auto_bound = served[0]
+            return self._auto_bound
+        return self.model
+
+    def _complete(self, prompt: str, temperature: float | None = None) -> str:
         req = urllib.request.Request(
             self.endpoint.rstrip("/") + "/chat/completions",
             data=json.dumps({
-                "model": self.model,
+                "model": self._resolve_model(),
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0,
+                "temperature": self.temperature if temperature is None else temperature,
             }).encode(),
             headers={"Content-Type": "application/json"},
         )
@@ -118,9 +139,16 @@ class LLMPlanner(Planner):
         )
         raw = self._complete(prompt)
         try:
-            action = json.loads(raw)
-        except json.JSONDecodeError:
-            raise AgentError(f"LLM returned malformed JSON — refusing to act: {raw[:200]}")
+            action = _extract_json(raw)
+        except AgentError:
+            # adaptive retry: many reasoning weights loop at very low
+            # temperature (documented on Qwythos-class cards) - retry once
+            # at the recommended 0.6 before refusing
+            if self.temperature <= 0.3:
+                raw = self._complete(prompt, temperature=0.6)
+                action = _extract_json(raw)
+            else:
+                raise
         if not isinstance(action, dict):
             raise AgentError("LLM response is not an object — refusing to act")
         if action.get("done"):
@@ -138,6 +166,62 @@ class LLMPlanner(Planner):
         if any(k in (action.get("args") or {}) for k in ("command", "shell", "argv")):
             raise AgentError("LLM proposed a raw shell string — rejected at the agent boundary")
         return action
+
+
+def _strip_reasoning(text: str) -> str:
+    """Reasoning models (Qwythos-class, Qwen-thinking, R1-style) open
+    with a think block before the answer. Strip it, then extract the
+    first JSON object from whatever preamble remains - the build adapts
+    to how the installed weights answer."""
+    import re
+    text = re.sub(r"<think(?:ing)?>.*?</think(?:ing)?>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    return text.strip()
+
+
+def _extract_json(text: str) -> dict:
+    """Pull the first JSON object out of arbitrary model preamble."""
+    import re
+    cleaned = _strip_reasoning(text)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            raise AgentError(
+                f"LLM returned text but no parseable JSON action - refusing to act: {cleaned[:200]}"
+            )
+    raise AgentError(f"LLM returned no JSON action - refusing to act: {cleaned[:200]}")
+
+
+def discover_brains() -> dict:
+    """Probe every configured endpoint (OpenAI-compatible GET /models)
+    and report what is actually being served. The build binds to the
+    weights you installed - it never demands specific ones."""
+    out = {}
+    for role, cfg in brains().items():
+        status = {"configured": cfg, "live": False, "served_models": [], "note": ""}
+        try:
+            req = urllib.request.Request(cfg["endpoint"].rstrip("/").replace("/v1", "") + "/v1/models")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.load(resp)
+            served = [m.get("id") for m in data.get("data", []) if m.get("id")]
+            status["live"] = True
+            status["served_models"] = served
+            if cfg["model"] in served:
+                status["note"] = "configured model is served - exact match"
+            elif served:
+                status["note"] = (
+                    f"configured model {cfg['model']!r} not in served list - the planner "
+                    f"will auto-bind to {served[0]!r} (weights as installed)"
+                )
+        except Exception as e:
+            status["note"] = f"unreachable: {e} - role stays unbound, mission continues without it"
+        out[role] = status
+    return out
 
 
 def brains() -> dict:

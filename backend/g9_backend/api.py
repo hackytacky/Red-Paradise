@@ -154,6 +154,14 @@ def agent_brains():
     return {"ok": True, "brains": brains()}
 
 
+@app.get("/brains/discover")
+def agent_brains_discover():
+    """Probe every configured endpoint and report what weights are
+    actually being served - the build binds to what you installed."""
+    from .agent import discover_brains
+    return {"ok": True, "discovery": discover_brains()}
+
+
 @app.get("/engagements")
 def engagements_list():
     """The engagement registry: scope, RoE state, principals, grants."""

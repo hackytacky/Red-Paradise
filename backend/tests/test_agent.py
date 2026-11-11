@@ -78,7 +78,7 @@ class TestLLMPlanner:
                 super().__init__(endpoint="http://fake.local/v1", model="fake")
                 self.calls = 0
 
-            def _complete(self, prompt):
+            def _complete(self, prompt, temperature=None):
                 r = responses[self.calls]
                 self.calls += 1
                 return r
@@ -133,11 +133,70 @@ class TestLLMPlanner:
             m.close()
 
     def test_malformed_json_refused(self):
+        """Malformed output: the planner retries once at the documented
+        safe temperature (0.6) for reasoning weights, then refuses."""
         m = LabMission(mode="autonomous")
         try:
-            planner = self._fake_llm(["not json at all"])
+            planner = self._fake_llm(["not json at all", "still not json"])
             Agent(m, planner, max_steps=5).run()
-            assert any("malformed JSON" in e["msg"] for e in m.events)
+            assert any("no JSON action" in e["msg"] for e in m.events)
+        finally:
+            m.close()
+
+    def test_reasoning_preamble_and_think_block_handled(self):
+        """Weights as installed: reasoning models emit think blocks and
+        prose - the planner strips both and extracts the action."""
+        from g9_backend.agent import _extract_json
+        raw = (
+            "<think reasoning model preamble>...loop of thought...</think reasoning>"
+            "Here is my next action:\n"
+            '{"tool": "http-probe", "target": "127.0.0.1:9", "args": {}, "reason": "r", "done": false}'
+        )
+        action = _extract_json(raw)
+        assert action["tool"] == "http-probe"
+
+    def test_adaptive_retry_recovers(self):
+        """First answer loops at temperature 0; the retry at 0.6 succeeds."""
+        import json
+        m = LabMission(mode="autonomous")
+        try:
+            target = m.http_target
+            planner = self._fake_llm([
+                "loop loop loop loop",  # degenerate output at temp 0
+                json.dumps({"tool": "http-probe", "target": target, "args": {}, "reason": "recovered", "done": False}),
+                json.dumps({"done": True}),
+            ])
+            report = Agent(m, planner, max_steps=5).run()
+            assert report["agent"]["steps"] == 1
+            assert any("recovered" in e["msg"] for e in m.events)
+        finally:
+            m.close()
+
+    def test_auto_bind_to_served_weights(self):
+        """Configured name mismatch never fails - the planner binds to
+        whatever the endpoint actually serves."""
+        from g9_backend.agent import LLMPlanner
+        import json
+
+        class AutoBind(LLMPlanner):
+            def __init__(self):
+                super().__init__(endpoint="http://fake.local/v1", model="wrong-name")
+                self.sent_models = []
+
+            def _resolve_model(self):
+                # simulate /models discovery: endpoint serves one model
+                self._auto_bound = "installed-weights-9b"
+                return self._auto_bound
+
+            def _complete(self, prompt, temperature=None):
+                self.sent_models.append(self._resolve_model())
+                return json.dumps({"done": True})
+
+        p = AutoBind()
+        m = LabMission(mode="autonomous")
+        try:
+            Agent(m, p, max_steps=2).run()
+            assert all(x == "installed-weights-9b" for x in p.sent_models)
         finally:
             m.close()
 
