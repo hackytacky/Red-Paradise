@@ -97,7 +97,7 @@ curl -X POST http://127.0.0.1:8700/lab/run     # expect 10 candidates → 10 rep
 docker compose -f deploy/docker-compose.host.yml up -d --build lab-target backend frontend
 ```
 
-CI: `.github/workflows/` runs backend pytest + frontend test/build on push/PR.
+CI: removed at the operator's request (2026-11) — run both suites locally before pushing.
 
 ## 5. Recent history (what just landed)
 
