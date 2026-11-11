@@ -130,7 +130,58 @@ def invoke(req: InvokeRequest):
 # The lab target binds 127.0.0.1 with an ephemeral port; the mission
 # stops the target when the run completes.
 
-_lab_state: dict = {"report": None, "mission": None}
+_lab_state: dict = {"report": None, "mission": None, "live": None}
+_live_cursor = {"idx": 0}
+
+
+@app.post("/lab/run/live")
+def lab_run_live(mode: str = "autonomous"):
+    """Kick off a live mission in the background — the Mission Console
+    UI polls /lab/events to watch every decision, gate, execution and
+    verification step as it happens."""
+    import threading
+    prev = _lab_state.get("live")
+    if prev is not None and prev.get("mission") is not None:
+        try:
+            prev["mission"].close()
+        except Exception:
+            pass
+    mission = LabMission(mode=mode)
+    _lab_state["live"] = {"mission": mission, "done": False, "error": None}
+
+    def _run():
+        try:
+            _lab_state["report"] = mission.run()
+        except Exception as e:  # surface honestly, never silently
+            _lab_state["live"]["error"] = str(e)
+        finally:
+            _lab_state["live"]["done"] = True
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"ok": True, "mode": mode, "note": "poll GET /lab/events for the live stream"}
+
+
+@app.get("/lab/events")
+def lab_events(since: int = 0):
+    """Incremental live event stream: returns all events after index
+    `since` plus the run status. Frontend polls this every second."""
+    live = _lab_state.get("live")
+    if live is None:
+        return {"ok": False, "reason": "no live mission - POST /lab/run/live first",
+                "events": [], "next": 0, "done": True}
+    mission = live["mission"]
+    events = mission.events
+    batch = events[since:]
+    return {
+        "ok": True,
+        "mode": mission.autonomy.mode,
+        "pending": mission.pending_actions() if hasattr(mission, "pending_actions") else [],
+        "events": batch,
+        "next": len(events),
+        "done": live["done"],
+        "error": live["error"],
+        "report": _lab_state["report"] if live["done"] else None,
+    }
 
 
 @app.post("/lab/run")

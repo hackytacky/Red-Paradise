@@ -84,6 +84,14 @@ class LabMission:
             self.ledger = AuditLedger(engagement_id)
             self.graph = EvidenceGraph(engagement_id)
         self.collector = ResultCollector(self.graph)
+        self.events: list[dict] = []
+
+    def emit(self, kind: str, msg: str, **data) -> None:
+        """Live mission event stream — every decision, gate, execution,
+        and verification step as it happens. Rendered by the Mission
+        Console UI."""
+        import time as _time
+        self.events.append({"t": round(_time.time(), 3), "kind": kind, "msg": msg, **data})
 
     def close(self):
         self.target.stop()
@@ -101,17 +109,21 @@ class LabMission:
             "required_sandbox_class": "restricted-analysis",
         })
         if decision.effect == "deny":
+            self.emit("gate", f"POLICY DENY {tool_id} -> {target}: {'; '.join(decision.reasons)}")
             return {"ok": False, "blocked_at": "policy", "reasons": decision.reasons}
+        self.emit("thinking", f"policy cleared {tool_id} on {target} - evaluating autonomy mode '{self.autonomy.mode}'")
         verdict = self.autonomy.decide(
             {"action_id": spec["action_id"], "high_impact": tool_id in HIGH_IMPACT_LAB_TOOLS,
              "spec": spec, "target": target},
             decision.effect,
         )
         if verdict == "await_approval":
+            self.emit("gate", f"AUTONOMY: action queued for operator approval ({tool_id} on {target})")
             return {"ok": False, "blocked_at": "autonomy", "pending": True,
                     "action_id": spec["action_id"], "tool": tool_id,
                     "reason": f"mode={self.autonomy.mode}: operator approval required"}
         if verdict == "refuse":
+            self.emit("gate", f"AUTONOMY: refused {tool_id}")
             return {"ok": False, "blocked_at": "autonomy", "reason": "refused"}
         return self._execute_gated(spec, target)
 
@@ -130,8 +142,10 @@ class LabMission:
             self.budget.charge_tokens(TOKEN_COST_PER_ACTION)
         except BudgetError as e:
             return {"ok": False, "blocked_at": "budget", "reason": str(e)}
+        self.emit("execution", f"EXECUTING {tool_id} against {target} (real probe, hardened gates cleared)")
         adapter = LAB_ADAPTERS[tool_id]
         run = adapter(spec)  # REAL execution against the lab target
+        self.emit("execution", f"{tool_id} finished exit={run['exit_code']} - output entering evidence collector as observations + candidates")
         self.ledger.append("agent:chimera-lab", "tool.invoke", subject=tool_id,
                           detail=f"target={target} exit={run['exit_code']}")
         rec = self.collector.ingest_tool_result(
@@ -166,6 +180,7 @@ class LabMission:
                            detail="lab-plane full active run — RoE signed, loopback scope")
         phases: list[dict] = []
         for phase, tools in PHASES:
+            self.emit("phase", f"--- phase {phase}: {', '.join(tools)} ---")
             results = []
             for tool in tools:
                 targets = [self.http_target]
@@ -192,6 +207,7 @@ class LabMission:
         reproduction — the scanner's claim is never trusted."""
         candidates = [n for n in self.graph.nodes.values()
                       if n["klass"] == "finding" and n["validation_status"] == "candidate"]
+        self.emit("phase", f"VERIFICATION AUTHORITY: independently re-probing {len(candidates)} candidates - promotion only on reproduction")
         reproduced: list[dict] = []
         for cand in candidates:
             template = cand["provenance"].get("template", "")
@@ -211,6 +227,7 @@ class LabMission:
                 except _json.JSONDecodeError:
                     continue
                 if data.get("template-id") == template:
+                    self.emit("finding", f"REPRODUCED: {template} on {host} - promoted to reproduced")
                     cand["validation_status"] = "reproduced"
                     reproduced.append({
                         "id": cand["id"], "template": template, "host": host,
@@ -218,6 +235,7 @@ class LabMission:
                     })
                     break
         ok, seq, reason = self.ledger.verify_chain()
+        self.emit("ledger", f"hash chain verified: {ok} over {len(self.ledger.records)} records")
         return {
             "ok": True,
             "engagement_id": self.engagement_id,
