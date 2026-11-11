@@ -140,6 +140,24 @@ class LLMPlanner(Planner):
         return action
 
 
+def brains() -> dict:
+    """The configured brain stack, by role. Each role is an
+    OpenAI-compatible loopback endpoint; admission records the HF
+    repo revision the weights came from."""
+    import os
+    roles = {}
+    for role, env_ep, env_m in [
+        ("planner", "G9_LLM_ENDPOINT", "G9_LLM_MODEL"),
+        ("specialist", "G9_LLM_SPECIALIST_ENDPOINT", "G9_LLM_SPECIALIST_MODEL"),
+        ("fast", "G9_LLM_FAST_ENDPOINT", "G9_LLM_FAST_MODEL"),
+        ("fallback", "G9_LLM_FALLBACK_ENDPOINT", "G9_LLM_FALLBACK_MODEL"),
+    ]:
+        ep = os.environ.get(env_ep, "")
+        if ep:
+            roles[role] = {"endpoint": ep, "model": os.environ.get(env_m, "local")}
+    return roles
+
+
 class FallbackPlanner(Planner):
     """Main brain first; on failure (endpoint down, malformed output)
     switch to the fallback brain for the rest of the mission. The

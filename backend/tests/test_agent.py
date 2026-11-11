@@ -195,3 +195,17 @@ class TestFallbackPlanner:
             assert planner.switched is None
         finally:
             m.close()
+
+
+class TestBrainRegistry:
+    def test_roles_read_from_env(self, monkeypatch):
+        from g9_backend.agent import brains
+        monkeypatch.setenv("G9_LLM_ENDPOINT", "http://127.0.0.1:8080/v1")
+        monkeypatch.setenv("G9_LLM_MODEL", "Qwythos-9B")
+        monkeypatch.setenv("G9_LLM_SPECIALIST_ENDPOINT", "http://127.0.0.1:8081/v1")
+        monkeypatch.setenv("G9_LLM_SPECIALIST_MODEL", "Qwensploit-4B")
+        monkeypatch.delenv("G9_LLM_FAST_ENDPOINT", raising=False)
+        b = brains()
+        assert b["planner"]["model"] == "Qwythos-9B"
+        assert b["specialist"]["model"] == "Qwensploit-4B"
+        assert "fast" not in b  # unconfigured roles are simply absent

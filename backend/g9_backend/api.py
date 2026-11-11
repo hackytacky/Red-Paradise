@@ -146,6 +146,14 @@ def engagement_quickstart(mode: str = "autonomous", planner: str = "rulebook"):
     return {"ok": True, "engagement": record, "launch": result}
 
 
+@app.get("/brains")
+def agent_brains():
+    """The configured brain stack by role (planner / specialist / fast /
+    fallback) - each an OpenAI-compatible loopback endpoint."""
+    from .agent import brains
+    return {"ok": True, "brains": brains()}
+
+
 @app.get("/engagements")
 def engagements_list():
     """The engagement registry: scope, RoE state, principals, grants."""
